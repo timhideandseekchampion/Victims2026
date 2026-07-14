@@ -1,0 +1,689 @@
+<meta charset="utf-8">
+<title>algo26v1 — Strategy Showcase</title>
+<style>
+  .viz-root{
+    --page:#f6f7f9; --surface:#ffffff; --surface-2:#eef1f5;
+    --ink:#0b0e13; --ink-2:#47515f; --muted:#7a838f;
+    --grid:#e5e8ee; --axis:#c6ccd5; --border:rgba(11,14,19,.10);
+    --cat1:#2a78d6; --cat2:#1baf7a; --cat3:#eda100; --cat4:#4a3aa7; --cat5:#c2547a;
+    --pos:#2a78d6; --neg:#e34948; --good:#0ca30c; --crit:#d03b3b;
+    --mono: ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --sans: system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  @media (prefers-color-scheme: dark){ .viz-root{
+    --page:#080b10; --surface:#111621; --surface-2:#171e2a;
+    --ink:#eef1f6; --ink-2:#a9b3c1; --muted:#6f7a89;
+    --grid:#1d2530; --axis:#333d4a; --border:rgba(255,255,255,.09);
+    --cat1:#3987e5; --cat2:#199e70; --cat3:#c98500; --cat4:#9085e9; --cat5:#d47a9a;
+    --pos:#3987e5; --neg:#e66767; --good:#12b312; --crit:#e05555;
+  }}
+  :root[data-theme="dark"] .viz-root{
+    --page:#080b10; --surface:#111621; --surface-2:#171e2a;
+    --ink:#eef1f6; --ink-2:#a9b3c1; --muted:#6f7a89;
+    --grid:#1d2530; --axis:#333d4a; --border:rgba(255,255,255,.09);
+    --cat1:#3987e5; --cat2:#199e70; --cat3:#c98500; --cat4:#9085e9; --cat5:#d47a9a;
+    --pos:#3987e5; --neg:#e66767; --good:#12b312; --crit:#e05555;
+  }
+  :root[data-theme="light"] .viz-root{
+    --page:#f6f7f9; --surface:#ffffff; --surface-2:#eef1f5;
+    --ink:#0b0e13; --ink-2:#47515f; --muted:#7a838f;
+    --grid:#e5e8ee; --axis:#c6ccd5; --border:rgba(11,14,19,.10);
+    --cat1:#2a78d6; --cat2:#1baf7a; --cat3:#eda100; --cat4:#4a3aa7; --cat5:#c2547a;
+    --pos:#2a78d6; --neg:#e34948; --good:#0ca30c; --crit:#d03b3b;
+  }
+  *{box-sizing:border-box}
+  .viz-root{background:var(--page); color:var(--ink); font-family:var(--sans); line-height:1.5; padding:22px 22px 60px; min-height:100vh; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1240px; margin:0 auto;}
+  .viz-root h1{font-size:21px; font-weight:680; letter-spacing:-.01em; margin:0;}
+  .viz-root h2{font-size:14px; font-weight:640; margin:0;}
+  .viz-root h3{font-size:12.5px; font-weight:640; margin:0;}
+  .sub{color:var(--ink-2); font-size:12.5px; margin-top:4px;}
+  .cap{color:var(--muted); font-size:11.5px; margin-top:3px; line-height:1.5;}
+  .mono{font-family:var(--mono); font-variant-numeric:tabular-nums;}
+  .eyebrow{font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;}
+  .row{display:flex; gap:14px;}
+  .between{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
+  .grid{display:grid; gap:14px;}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:16px;}
+  .tile{background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:13px 14px;}
+  .tile .k{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;}
+  .tile .v{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:23px; font-weight:600; margin-top:6px; line-height:1;}
+  .tile .n{font-size:11px; color:var(--ink-2); margin-top:5px;}
+  .chip{display:inline-flex; align-items:center; gap:5px; font-family:var(--mono); font-size:11px; color:var(--ink-2); background:var(--surface-2); border:1px solid var(--border); border-radius:20px; padding:4px 10px;}
+  .chip b{color:var(--ink); font-weight:600;}
+  .toggle{font-family:var(--mono); font-size:11px; color:var(--ink-2); background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 12px; cursor:pointer;}
+  .toggle:hover{color:var(--ink); border-color:var(--axis);}
+  .nav{display:flex; gap:8px; flex-wrap:wrap;}
+  .navbtn{font-family:var(--mono); font-size:12px; color:var(--ink-2); background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:9px 15px; cursor:pointer; transition:all .12s;}
+  .navbtn:hover{color:var(--ink); border-color:var(--axis);}
+  .navbtn.on{background:var(--ink); color:var(--page); border-color:var(--ink);}
+  .stratbtn{font-family:var(--sans); font-size:12.5px; color:var(--ink-2); background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:9px 14px; cursor:pointer; display:flex; align-items:center; gap:8px; transition:all .12s;}
+  .stratbtn:hover{border-color:var(--axis);}
+  .stratbtn .dot{width:9px; height:9px; border-radius:50%;}
+  .stratbtn.on{border-color:var(--ink); color:var(--ink); background:var(--surface-2);}
+  .dot{display:inline-block; width:9px; height:9px; border-radius:50%; flex:none;}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-2); margin-top:2px; align-items:center;}
+  .legend .it{display:flex; align-items:center; gap:6px; cursor:default;}
+  .ax{font-family:var(--mono); font-size:9.5px; fill:var(--muted);}
+  .sig{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; font-size:12.5px; color:var(--ink-2); line-height:1.65;}
+  .sig b{color:var(--ink);} .sig .step{font-family:var(--mono); color:var(--cat1); font-weight:600;}
+  table.cmp{border-collapse:collapse; width:100%; font-size:12.5px;}
+  table.cmp th,table.cmp td{padding:9px 12px; text-align:right; border-bottom:1px solid var(--border);}
+  table.cmp th:first-child,table.cmp td:first-child{text-align:left; color:var(--ink-2);}
+  table.cmp thead th{font-weight:640; color:var(--ink); font-size:12px;}
+  table.cmp td.num{font-family:var(--mono); font-variant-numeric:tabular-nums;}
+  table.cmp td.best{background:color-mix(in srgb, var(--cat1) 12%, transparent); font-weight:640; border-radius:4px;}
+  .tt{position:fixed; pointer-events:none; z-index:80; background:var(--surface); color:var(--ink); border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-family:var(--mono); font-size:11px; line-height:1.55; box-shadow:0 6px 22px rgba(0,0,0,.28); opacity:0; transition:opacity .07s; max-width:260px;}
+  .tt b{color:var(--ink);} .tt .dim{color:var(--muted);}
+  .hidden{display:none !important;}
+  .foot{color:var(--muted); font-size:11.5px; line-height:1.7; margin-top:6px;}
+  .badge{font-family:var(--mono); font-size:10px; padding:2px 7px; border-radius:5px; letter-spacing:.03em;}
+  .badge.sub{background:color-mix(in srgb, var(--cat1) 18%, transparent); color:var(--cat1);}
+  svg{display:block; width:100%; height:auto; overflow:visible;}
+  canvas{display:block; width:100%; border-radius:8px;}
+</style>
+
+<div class="viz-root">
+<div class="wrap">
+  <!-- HEADER -->
+  <div class="between" style="margin-bottom:16px">
+    <div>
+      <div class="eyebrow">Algothon 2026 · production book · algo26v1</div>
+      <h1>Peer Lead-Lag Stat-Arb — Strategy Showcase</h1>
+      <div class="sub" id="subhead"></div>
+    </div>
+    <button class="toggle" id="themeBtn">◐ theme</button>
+  </div>
+
+  <div class="nav" style="margin-bottom:18px" id="nav">
+    <button class="navbtn on" data-panel="overview">Overview</button>
+    <button class="navbtn" data-panel="detail">Per-strategy</button>
+    <button class="navbtn" data-panel="edge">The edge</button>
+  </div>
+
+  <!-- ===================== OVERVIEW ===================== -->
+  <section id="panel-overview">
+    <div class="sig" style="margin-bottom:16px">
+      <b>One signal, three sizing schemes.</b> Every book predicts each asset's next-day return from
+      <b>today's whole cross-section</b> of 51 returns (a directed peer lead-lag forecast), demeans it to
+      go <span class="step">market-neutral</span>, and trades the result. They differ only in how the forecast is
+      turned into a position — and that choice moves the eval.py Score from <b>179</b> to <b>541</b>.
+      All numbers below are run through the official <b>eval.py</b> accounting (integer shares, $10k/$100k limits,
+      1bp / 0.2bp commissions) over the scored last 250 days.
+    </div>
+
+    <div class="grid" id="stratCards" style="grid-template-columns:repeat(3,1fr); margin-bottom:16px"></div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="between" style="margin-bottom:6px">
+        <div><h2>Cumulative PnL — all three books</h2>
+          <div class="cap">Scored daily PnL, summed. Shared dollar axis — the gap <i>is</i> the sizing decision.</div></div>
+        <div class="legend" id="eqLegend"></div>
+      </div>
+      <div id="chart-overview-eq"></div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-bottom:4px">Head-to-head</h2>
+      <div class="cap" style="margin-bottom:10px">Best in each row highlighted. Score is the competition objective; Sharpe is the scale-free edge measure.</div>
+      <div style="overflow-x:auto"><table class="cmp" id="cmpTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ===================== DETAIL ===================== -->
+  <section id="panel-detail" class="hidden">
+    <div class="row" style="flex-wrap:wrap; margin-bottom:14px" id="stratPicker"></div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="between">
+        <div>
+          <div style="display:flex; align-items:center; gap:10px">
+            <span class="dot" id="dtDot"></span><h2 id="dtLabel"></h2>
+            <span id="dtBadge"></span>
+          </div>
+          <div class="cap" id="dtDesc" style="max-width:760px"></div>
+        </div>
+      </div>
+      <div class="row" style="flex-wrap:wrap; margin-top:12px" id="dtConfig"></div>
+    </div>
+
+    <div class="grid" id="dtTiles" style="grid-template-columns:repeat(auto-fit,minmax(128px,1fr)); margin-bottom:14px"></div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="between" style="margin-bottom:6px">
+        <div><h2>Equity curve & drawdown</h2>
+          <div class="cap">Cumulative PnL (top) and underwater drawdown from the running peak (bottom).</div></div>
+      </div>
+      <div id="chart-detail-eq"></div>
+      <div id="chart-detail-dd" style="margin-top:4px"></div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1.1fr .9fr; margin-bottom:14px" id="dtMid">
+      <div class="card">
+        <h2 style="margin-bottom:2px">Daily PnL distribution</h2>
+        <div class="cap" style="margin-bottom:8px">Blue = up day, red = down day. Consistency, not lottery days, drives the Sharpe.</div>
+        <div id="chart-detail-hist"></div>
+      </div>
+      <div class="card">
+        <h2 style="margin-bottom:2px">Book composition over time</h2>
+        <div class="cap" style="margin-bottom:8px">Long ($) vs short ($) held each day — dollar-neutral by construction.</div>
+        <div id="chart-detail-book"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="between" style="margin-bottom:6px">
+        <div><h2>Per-asset PnL attribution</h2>
+          <div class="cap">Gross PnL each name contributed over 250 days. Breadth: no single name dominates.</div></div>
+      </div>
+      <div id="chart-detail-attr"></div>
+    </div>
+
+    <div class="card">
+      <div class="between" style="margin-bottom:8px">
+        <div><h2>Position heatmap</h2>
+          <div class="cap" id="hmCap">Dollar position per asset per day — blue long, red short, intensity = size toward the $10k limit.</div></div>
+      </div>
+      <canvas id="chart-detail-heat" height="520"></canvas>
+    </div>
+  </section>
+
+  <!-- ===================== EDGE ===================== -->
+  <section id="panel-edge" class="hidden">
+    <div class="sig" style="margin-bottom:16px">
+      <b>The edge is directed peer lead-lag, and it was adversarially verified.</b> A linear model reading the
+      whole cross-section forecasts each asset's next-day return with walk-forward IC ≈ <b>+0.058 (t ≈ 5.3)</b>,
+      positive on 64% of days and <b>stronger out-of-sample</b>. It is not autocorrelation (dropping own-return
+      <i>raises</i> IC) and not the market factor (dropping ALGO <i>raises</i> it). Below: how model choice, sample
+      window, hedging and significance testing all point the same way.
+    </div>
+
+    <div class="grid" id="edgeTiles" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); margin-bottom:16px"></div>
+
+    <div class="grid" style="grid-template-columns:1fr 1fr; margin-bottom:16px">
+      <div class="card">
+        <h2 style="margin-bottom:2px">Model bake-off — regularisation is the dial</h2>
+        <div class="cap" style="margin-bottom:8px">Walk-forward cross-sectional IC by model. Light ridge sharpens the fit; heavy ridge (α≥10) shrinks the small cross-asset coefficients that carry the signal and collapses it.</div>
+        <div id="chart-edge-sweep"></div>
+      </div>
+      <div class="card">
+        <h2 style="margin-bottom:2px">Out-of-sample stability</h2>
+        <div class="cap" style="margin-bottom:8px">Walk-forward IC vs where the OOS window starts (later start = shorter, more-recent window). Flat-to-rising = no decay across the full 500 days.</div>
+        <div id="chart-edge-warm"></div>
+      </div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div class="card">
+        <h2 style="margin-bottom:2px">The ALGO β-hedge is nearly free Sharpe</h2>
+        <div class="cap" style="margin-bottom:8px">Equal-dollar long/short is <i>not</i> beta-neutral (betas span 0.5–1.68). Cancelling residual net beta with the cheap ALGO index adds Sharpe at almost no cost.</div>
+        <div id="chart-edge-hedge"></div>
+      </div>
+      <div class="card">
+        <h2 style="margin-bottom:2px">Lead-lag structure</h2>
+        <div class="cap" style="margin-bottom:8px">Pervasive but individually weak directed links — the model aggregates them. Strong pairs keep their sign in both halves of the sample.</div>
+        <div id="chart-edge-leadlag"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot" id="foot"></div>
+</div>
+</div>
+
+<div class="tt" id="tt"></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+(function(){
+  "use strict";
+  const $ = s => document.querySelector(s);
+  const root = document.querySelector('.viz-root');
+  const tt = $('#tt');
+  const NS = 'http://www.w3.org/2000/svg';
+  const cssv = n => getComputedStyle(root).getPropertyValue(n).trim();
+  const fmt = (x,d=0) => (x<0?'-':'')+Math.abs(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+  const k$ = x => (Math.abs(x)>=1000? (x/1000).toFixed(x%1000?1:0)+'k' : ''+Math.round(x));
+  const sign$ = x => (x>=0?'+':'') + fmt(x);
+
+  const STRATS = DATA.order.map(k => Object.assign({key:k}, DATA.strategies[k]));
+  const COLOR = {conviction:'--cat3', max:'--cat2', adaptive:'--cat1'};
+  const U = DATA.universe;
+  const N = U.testDays;
+
+  $('#subhead').textContent =
+    `${U.nAssets} tradeable assets + ${U.indexName} index · ${U.nDays} daily obs · scored on the last ${N} days · verified through eval.py`;
+
+  // ---------- SVG helpers ----------
+  function E(tag, attrs, parent){
+    const el = document.createElementNS(NS, tag);
+    if(attrs) for(const k in attrs) el.setAttribute(k, attrs[k]);
+    if(parent) parent.appendChild(el);
+    return el;
+  }
+  function mkSvg(host, W, H){
+    host.innerHTML='';
+    const svg = E('svg', {viewBox:`0 0 ${W} ${H}`, preserveAspectRatio:'xMidYMid meet'});
+    svg.style.width='100%';
+    host.appendChild(svg);
+    return svg;
+  }
+  function showTT(html, ev){
+    tt.innerHTML = html; tt.style.opacity=1;
+    let x = ev.clientX+14, y = ev.clientY+14;
+    const r = tt.getBoundingClientRect();
+    if(x+r.width>innerWidth-8) x = ev.clientX-r.width-14;
+    if(y+r.height>innerHeight-8) y = ev.clientY-r.height-14;
+    tt.style.left=x+'px'; tt.style.top=y+'px';
+  }
+  const hideTT = ()=> tt.style.opacity=0;
+
+  function axes(svg, x0,y0,x1,y1){ // frame + baseline
+    E('line',{x1:x0,y1:y1,x2:x1,y2:y1,stroke:cssv('--axis'),'stroke-width':1},svg);
+  }
+  function gridY(svg, x0,x1, yFn, ticks, fmtFn){
+    ticks.forEach(v=>{
+      const y = yFn(v);
+      E('line',{x1:x0,y1:y,x2:x1,y2:y,stroke:cssv('--grid'),'stroke-width':1},svg);
+      const t=E('text',{x:x0-7,y:y+3,'text-anchor':'end'},svg); t.setAttribute('class','ax');
+      t.textContent = fmtFn(v);
+    });
+  }
+  function niceTicks(min,max,n=5){
+    const span=max-min||1, raw=span/n, mag=Math.pow(10,Math.floor(Math.log10(raw)));
+    const norm=raw/mag, step=(norm<1.5?1:norm<3?2:norm<7?5:10)*mag;
+    const out=[]; let v=Math.ceil(min/step)*step;
+    for(;v<=max+step*1e-6;v+=step) out.push(+v.toFixed(6));
+    return out;
+  }
+
+  // ---------- multi-line chart with crosshair ----------
+  function lineChart(host, opts){
+    const {series, W=1100, H=300, yFmt=k$, xLabels, baseline0=true, area=false} = opts;
+    const svg = mkSvg(host, W, H);
+    const P={l:52,r:16,t:12,b:24};
+    const n = series[0].data.length;
+    let mn=Infinity, mx=-Infinity;
+    series.forEach(s=>s.data.forEach(v=>{ if(v<mn)mn=v; if(v>mx)mx=v; }));
+    if(baseline0){ mn=Math.min(mn,0); mx=Math.max(mx,0); }
+    const pad=(mx-mn)*0.06||1; mn-=pad; mx+=pad;
+    const xF = i => P.l + (n<=1?0:i/(n-1))*(W-P.l-P.r);
+    const yF = v => P.t + (1-(v-mn)/(mx-mn))*(H-P.t-P.b);
+    gridY(svg,P.l,W-P.r,yF,niceTicks(mn,mx,5),yFmt);
+    // zero line emphasis
+    if(mn<0&&mx>0){ E('line',{x1:P.l,y1:yF(0),x2:W-P.r,y2:yF(0),stroke:cssv('--axis'),'stroke-width':1,'stroke-dasharray':'2 3'},svg); }
+    // x ticks
+    const xt=[0, Math.round(n*.25), Math.round(n*.5), Math.round(n*.75), n-1];
+    xt.forEach(i=>{ const t=E('text',{x:xF(i),y:H-6,'text-anchor':'middle'},svg); t.setAttribute('class','ax');
+      t.textContent = xLabels? xLabels(i) : ('d'+i); });
+    // paths
+    series.forEach(s=>{
+      const col=cssv(s.color);
+      let d=''; s.data.forEach((v,i)=> d += (i?'L':'M')+xF(i).toFixed(1)+' '+yF(v).toFixed(1));
+      if(area){
+        const af = d + `L${xF(n-1)} ${yF(0)} L${xF(0)} ${yF(0)} Z`;
+        const p=E('path',{d:af,fill:col,'fill-opacity':.10},svg);
+      }
+      E('path',{d,fill:'none',stroke:col,'stroke-width':s.w||2,'stroke-linejoin':'round','stroke-linecap':'round','opacity':s.dim?0.5:1},svg);
+    });
+    // crosshair
+    const cl=E('line',{x1:0,y1:P.t,x2:0,y2:H-P.b,stroke:cssv('--axis'),'stroke-width':1,opacity:0},svg);
+    const dots=series.map(s=>E('circle',{r:3.5,fill:cssv(s.color),stroke:cssv('--surface'),'stroke-width':1.5,opacity:0},svg));
+    const hit=E('rect',{x:P.l,y:P.t,width:W-P.l-P.r,height:H-P.t-P.b,fill:'transparent'},svg);
+    hit.style.cursor='crosshair';
+    hit.addEventListener('mousemove',ev=>{
+      const r=svg.getBoundingClientRect(), sx=W/r.width;
+      const px=(ev.clientX-r.left)*sx;
+      let i=Math.round((px-P.l)/((W-P.l-P.r)/(n-1))); i=Math.max(0,Math.min(n-1,i));
+      cl.setAttribute('x1',xF(i)); cl.setAttribute('x2',xF(i)); cl.setAttribute('opacity',1);
+      let rows = series.map((s,si)=>{ dots[si].setAttribute('cx',xF(i)); dots[si].setAttribute('cy',yF(s.data[i])); dots[si].setAttribute('opacity',1);
+        return `<div><span class="dot" style="background:${cssv(s.color)}"></span> ${s.name} <b>${s.tip?s.tip(s.data[i]):k$(s.data[i])}</b></div>`; }).join('');
+      showTT(`<div class="dim">${xLabels?xLabels(i):'day '+i}</div>${rows}`, ev);
+    });
+    hit.addEventListener('mouseleave',()=>{ hideTT(); cl.setAttribute('opacity',0); dots.forEach(d=>d.setAttribute('opacity',0)); });
+    return svg;
+  }
+
+  // ---------- histogram ----------
+  function histogram(host, vals, opts={}){
+    const {W=560,H=230,bins=31}=opts;
+    const svg=mkSvg(host,W,H); const P={l:44,r:12,t:10,b:26};
+    let mn=Math.min(...vals), mx=Math.max(...vals); const span=mx-mn||1;
+    const bw=span/bins; const counts=new Array(bins).fill(0);
+    vals.forEach(v=>{ let b=Math.floor((v-mn)/bw); if(b>=bins)b=bins-1; if(b<0)b=0; counts[b]++; });
+    const cmax=Math.max(...counts);
+    const xF=b=>P.l+(b/bins)*(W-P.l-P.r), yF=c=>P.t+(1-c/cmax)*(H-P.t-P.b);
+    gridY(svg,P.l,W-P.r,yF,niceTicks(0,cmax,4),v=>Math.round(v));
+    const zeroX = P.l + ((0-mn)/span)*(W-P.l-P.r);
+    for(let b=0;b<bins;b++){
+      if(!counts[b])continue;
+      const lo=mn+b*bw, x=xF(b), w=(W-P.l-P.r)/bins-1.2, y=yF(counts[b]);
+      const col = (lo+bw/2)>=0? cssv('--pos'):cssv('--neg');
+      const rc=E('rect',{x:x+.6,y,width:Math.max(w,1),height:H-P.b-y,fill:col,rx:1.5,'fill-opacity':.85},svg);
+      rc.addEventListener('mousemove',ev=>showTT(`<div class="dim">PnL bin</div><b>$${k$(lo)} … $${k$(lo+bw)}</b><br>${counts[b]} day${counts[b]>1?'s':''}`,ev));
+      rc.addEventListener('mouseleave',hideTT);
+    }
+    E('line',{x1:zeroX,y1:P.t,x2:zeroX,y2:H-P.b,stroke:cssv('--axis'),'stroke-width':1,'stroke-dasharray':'2 3'},svg);
+    [mn,0,mx].forEach(v=>{ const x=P.l+((v-mn)/span)*(W-P.l-P.r); const t=E('text',{x,y:H-6,'text-anchor':'middle'},svg); t.setAttribute('class','ax'); t.textContent='$'+k$(v); });
+  }
+
+  // ---------- horizontal diverging bars (attribution) ----------
+  function attrChart(host, entries, opts={}){
+    // entries: [{name,val}] full set; show top+bottom
+    const {W=1100, topN=16}=opts;
+    const sorted=[...entries].sort((a,b)=>b.val-a.val);
+    const pick=[...sorted.slice(0,topN), ...sorted.slice(-topN)];
+    const seen=new Set(), rows=[]; pick.forEach(e=>{ if(!seen.has(e.name)){seen.add(e.name); rows.push(e);} });
+    rows.sort((a,b)=>b.val-a.val);
+    const rowH=15, gap=3, P={l:8,r:8,t:8,b:8};
+    const H=P.t+P.b+rows.length*(rowH+gap);
+    const svg=mkSvg(host,W,H);
+    const mx=Math.max(...rows.map(r=>Math.abs(r.val)))||1;
+    const mid=W*0.5;
+    const half=(W-P.l-P.r)/2 - 46;
+    rows.forEach((r,i)=>{
+      const y=P.t+i*(rowH+gap);
+      const w=(Math.abs(r.val)/mx)*half;
+      const pos=r.val>=0;
+      const x=pos?mid: mid-w;
+      const col=pos?cssv('--pos'):cssv('--neg');
+      const rc=E('rect',{x:pos?mid:mid-w, y, width:Math.max(w,.5), height:rowH, fill:col, rx:2.5, 'fill-opacity':.85},svg);
+      rc.addEventListener('mousemove',ev=>showTT(`<b>${r.name}</b><br><span class="dim">gross PnL</span> $${sign$(r.val)}`,ev));
+      rc.addEventListener('mouseleave',hideTT);
+      const t=E('text',{x:pos?mid-6:mid+6,y:y+rowH-4,'text-anchor':pos?'end':'start'},svg); t.setAttribute('class','ax'); t.textContent=r.name;
+      const vt=E('text',{x:pos?mid+w+5:mid-w-5,y:y+rowH-4,'text-anchor':pos?'start':'end'},svg); vt.setAttribute('class','ax'); vt.setAttribute('fill',cssv('--ink-2')); vt.textContent='$'+k$(r.val);
+    });
+    E('line',{x1:mid,y1:0,x2:mid,y2:H,stroke:cssv('--axis'),'stroke-width':1},svg);
+  }
+
+  // ---------- vertical bar chart (bake-off / hedge) ----------
+  function barChart(host, items, opts={}){
+    // items: [{label, val, color, tip}]
+    const {W=560,H=250,yFmt=v=>v.toFixed(3),y0=true, rot=false}=opts;
+    const svg=mkSvg(host,W,H); const P={l:50,r:12,t:12,b:rot?54:26};
+    let mn=Math.min(0,...items.map(d=>d.val)), mx=Math.max(0,...items.map(d=>d.val));
+    const pad=(mx-mn)*0.08||.01; mx+=pad; if(mn<0)mn-=pad;
+    const yF=v=>P.t+(1-(v-mn)/(mx-mn))*(H-P.t-P.b);
+    gridY(svg,P.l,W-P.r,yF,niceTicks(mn,mx,5),yFmt);
+    const n=items.length, bw=(W-P.l-P.r)/n;
+    const zeroY=yF(0);
+    items.forEach((d,i)=>{
+      const x=P.l+i*bw+bw*0.16, w=bw*0.68;
+      const y=Math.min(yF(d.val),zeroY), h=Math.abs(yF(d.val)-zeroY);
+      const col=cssv(d.color||'--cat1');
+      const rc=E('rect',{x,y,width:w,height:Math.max(h,.6),fill:col,rx:3,'fill-opacity':d.dim?.4:.9},svg);
+      rc.addEventListener('mousemove',ev=>showTT(d.tip||`<b>${d.label}</b><br>${yFmt(d.val)}`,ev));
+      rc.addEventListener('mouseleave',hideTT);
+      const t=E('text',{x:x+w/2,y:H-(rot?38:8),'text-anchor':rot?'end':'middle'},svg); t.setAttribute('class','ax');
+      if(rot){ t.setAttribute('transform',`rotate(-40 ${x+w/2} ${H-38})`); }
+      t.textContent=d.label;
+    });
+    E('line',{x1:P.l,y1:zeroY,x2:W-P.r,y2:zeroY,stroke:cssv('--axis'),'stroke-width':1},svg);
+  }
+
+  // =================== OVERVIEW ===================
+  function renderOverview(){
+    // cards
+    const host=$('#stratCards'); host.innerHTML='';
+    STRATS.forEach(s=>{
+      const m=s.meta, col=cssv(COLOR[s.key]);
+      const c=document.createElement('div'); c.className='card'; c.style.cursor='pointer'; c.style.borderTop='3px solid '+col;
+      c.innerHTML=`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span class="dot" style="background:${col}"></span>
+          <h3>${s.label}</h3>
+          ${s.key==='adaptive'?'<span class="badge sub">SUBMISSION</span>':''}
+        </div>
+        <div style="display:flex;align-items:baseline;gap:10px">
+          <div><div class="k" style="font-size:10px;color:var(--muted)">SCORE</div>
+            <div class="mono" style="font-size:30px;font-weight:680;line-height:1">${fmt(m.score)}</div></div>
+          <div style="margin-left:auto;text-align:right">
+            <div class="mono" style="font-size:16px;font-weight:600">${m.sharpe.toFixed(2)}</div>
+            <div class="k" style="font-size:10px;color:var(--muted)">SHARPE</div></div>
+        </div>
+        <div class="row" style="gap:16px;margin-top:12px">
+          <div><div class="mono" style="font-weight:600">$${k$(m.totalPnL)}</div><div class="cap">total PnL</div></div>
+          <div><div class="mono" style="font-weight:600">${m.winDays}%</div><div class="cap">win days</div></div>
+          <div><div class="mono" style="font-weight:600">$${k$(m.grossBook)}</div><div class="cap">gross book</div></div>
+        </div>
+        <div class="cap" style="margin-top:11px;min-height:48px">${s.desc}</div>
+        <div class="mono" style="font-size:11px;color:var(--muted);margin-top:6px">${s.module}</div>`;
+      c.addEventListener('click',()=>{ selectStrat(s.key); setPanel('detail'); });
+      host.appendChild(c);
+    });
+    // legend
+    $('#eqLegend').innerHTML = STRATS.map(s=>`<span class="it"><span class="dot" style="background:${cssv(COLOR[s.key])}"></span>${s.label}</span>`).join('');
+    // overlaid equity
+    lineChart($('#chart-overview-eq'), {
+      W:1100, H:320, yFmt:v=>'$'+k$(v),
+      xLabels:i=>'day '+(i+1)+' / '+N,
+      series: STRATS.map(s=>({name:s.label, color:COLOR[s.key], data:s.cumPL, w:s.key==='adaptive'?2.4:1.8, tip:v=>'$'+fmt(v)}))
+    });
+    // comparison table
+    buildTable();
+  }
+
+  function buildTable(){
+    const rows = [
+      ['Score', s=>s.meta.score, 'max', v=>fmt(v)],
+      ['Annualised Sharpe', s=>s.meta.sharpe, 'max', v=>v.toFixed(2)],
+      ['Total PnL ($)', s=>s.meta.totalPnL, 'max', v=>'$'+fmt(v)],
+      ['Mean daily PnL ($)', s=>s.meta.meanPL, 'max', v=>'$'+fmt(v)],
+      ['Daily PnL std ($)', s=>s.meta.stdPL, 'min', v=>'$'+fmt(v)],
+      ['Win days (%)', s=>s.meta.winDays, 'max', v=>v+'%'],
+      ['Max drawdown ($)', s=>s.meta.maxDD, 'max', v=>'$'+fmt(v)],
+      ['Best / worst day ($)', s=>s.meta.bestDay, null, s=>'$'+k$(s.meta.bestDay)+' / -$'+k$(-s.meta.worstDay), true],
+      ['Gross book ($)', s=>s.meta.grossBook, null, v=>'$'+fmt(v)],
+      ['Directional flips', s=>s.meta.totalFlips, null, v=>fmt(v)],
+      ['Avg holding (days)', s=>s.meta.avgHold, null, v=>v.toFixed(1)],
+      ['Commission (% of gross)', s=>s.meta.commPctGross, 'min', v=>v+'%'],
+    ];
+    let html = '<thead><tr><th>Metric</th>'+STRATS.map(s=>`<th><span class="dot" style="background:${cssv(COLOR[s.key])};margin-right:6px"></span>${s.label}${s.key==='adaptive'?' ★':''}</th>`).join('')+'</tr></thead><tbody>';
+    rows.forEach(r=>{
+      const [label,val,dir,fmtFn,raw]=r;
+      const vals=STRATS.map(val);
+      let bestIdx=-1;
+      if(dir){ let best=dir==='max'?-Infinity:Infinity;
+        vals.forEach((v,i)=>{ if((dir==='max'&&v>best)||(dir==='min'&&v<best)){best=v;bestIdx=i;} }); }
+      html+='<tr><td>'+label+'</td>'+STRATS.map((s,i)=>{
+        const cell = raw? fmtFn(s) : fmtFn(vals[i]);
+        return `<td class="num${i===bestIdx?' best':''}">${cell}</td>`;
+      }).join('')+'</tr>';
+    });
+    html+='</tbody>';
+    $('#cmpTable').innerHTML=html;
+  }
+
+  // =================== DETAIL ===================
+  let curKey = 'adaptive';
+  function renderPicker(){
+    const host=$('#stratPicker'); host.innerHTML='';
+    STRATS.forEach(s=>{
+      const b=document.createElement('button'); b.className='stratbtn'+(s.key===curKey?' on':'');
+      b.innerHTML=`<span class="dot" style="background:${cssv(COLOR[s.key])}"></span>${s.label}`;
+      b.addEventListener('click',()=>selectStrat(s.key));
+      host.appendChild(b);
+    });
+  }
+  function selectStrat(k){ curKey=k; renderPicker(); renderDetail(); }
+
+  function renderDetail(){
+    const s=DATA.strategies[curKey], m=s.meta, col=cssv(COLOR[curKey]);
+    $('#dtDot').style.background=col;
+    $('#dtLabel').textContent=s.label;
+    $('#dtBadge').innerHTML = curKey==='adaptive'?'<span class="badge sub">SUBMISSION CANDIDATE</span>':`<span class="chip">${s.module}</span>`;
+    $('#dtDesc').textContent=s.desc;
+    const cfg=s.config;
+    $('#dtConfig').innerHTML = Object.entries({Sizing:cfg.sizing, Window:cfg.window, 'Refit':cfg.refit+'d', 'Ridge α':cfg.ridge, Hedge:cfg.hedge})
+      .map(([k,v])=>`<span class="chip">${k} <b>${v}</b></span>`).join('') + `<span class="chip">${s.module}</span>`;
+
+    const tiles=[
+      ['Score', fmt(m.score), 'eval.py objective'],
+      ['Sharpe', m.sharpe.toFixed(2), 'annualised'],
+      ['Total PnL', '$'+k$(m.totalPnL), `${N} days`],
+      ['Win days', m.winDays+'%', 'positive'],
+      ['Max DD', '$'+k$(m.maxDD), `day ${m.maxDDat} · ${m.maxDDpct}%`],
+      ['Gross book', '$'+k$(m.grossBook), 'avg held'],
+      ['Flips', fmt(m.totalFlips), `${m.avgHold}d avg hold`],
+      ['Comm drag', m.commPctGross+'%', 'of gross'],
+    ];
+    $('#dtTiles').innerHTML = tiles.map(([k,v,n])=>`<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`).join('');
+
+    // equity + drawdown
+    lineChart($('#chart-detail-eq'), {W:1100,H:240,yFmt:v=>'$'+k$(v),
+      xLabels:i=>'day '+(i+1), series:[{name:'Cumulative PnL', color:COLOR[curKey], data:s.cumPL, w:2.2, tip:v=>'$'+fmt(v)}], area:true});
+    lineChart($('#chart-detail-dd'), {W:1100,H:130,yFmt:v=>'$'+k$(v),
+      xLabels:i=>'day '+(i+1), baseline0:true, area:true,
+      series:[{name:'Drawdown', color:'--neg', data:s.drawdown, w:1.5, tip:v=>'$'+fmt(v)}]});
+
+    histogram($('#chart-detail-hist'), s.dayPL, {W:560,H:230});
+
+    // book composition: long vs short $
+    const longs=[], shorts=[];
+    s.posMatrix.forEach(day=>{ let L=0,S=0; day.forEach(v=>{ if(v>0)L+=v; else S+=v; }); longs.push(L); shorts.push(S); });
+    lineChart($('#chart-detail-book'), {W:560,H:230,yFmt:v=>'$'+k$(v), baseline0:true,
+      xLabels:i=>'day '+(i+1), series:[
+        {name:'Long $', color:'--cat1', data:longs, w:1.6, tip:v=>'$'+k$(v)},
+        {name:'Short $', color:'--neg', data:shorts, w:1.6, tip:v=>'$'+k$(v)}]});
+
+    // attribution (exclude index unless it has PnL)
+    const attr=Object.entries(s.assetPnL).filter(([k,v])=>k!==U.indexName || Math.abs(v)>1).map(([name,val])=>({name,val}));
+    attrChart($('#chart-detail-attr'), attr, {W:1100, topN:16});
+
+    // heatmap
+    drawHeatmap(s);
+  }
+
+  function drawHeatmap(s){
+    const cv=$('#chart-detail-heat');
+    const names=U.names; // includes index at 0
+    const days=s.posMatrix.length;
+    // order rows by total abs exposure, drop index if flat
+    const idx=names.map((n,i)=>i);
+    const absSum=i=> s.posMatrix.reduce((a,d)=>a+Math.abs(d[i]),0);
+    let rows=idx.filter(i=> i!==0 || absSum(0)>1).sort((a,b)=>absSum(b)-absSum(a));
+    const nR=rows.length;
+    const cw=Math.max(2, Math.floor((cv.clientWidth||1100)/days));
+    const W=cv.clientWidth||1100, rh=Math.max(6, Math.floor(520/nR));
+    const H=nR*rh;
+    const dpr=window.devicePixelRatio||1;
+    cv.width=W*dpr; cv.height=H*dpr; cv.style.height=H+'px';
+    const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr); ctx.clearRect(0,0,W,H);
+    const cellW=W/days;
+    const posC=cssv('--cat1'), negC=cssv('--neg');
+    const surf=cssv('--surface');
+    function mix(c,t){ // c hex -> blend with surface by t (0..1)
+      return c; }
+    rows.forEach((ri,r)=>{
+      for(let d=0; d<days; d++){
+        const v=s.posMatrix[d][ri];
+        if(!v){ continue; }
+        const lim = ri===0? 100000:10000;
+        const a=Math.min(1, Math.abs(v)/lim)*0.9+0.1;
+        ctx.fillStyle = v>0? posC:negC;
+        ctx.globalAlpha=a;
+        ctx.fillRect(d*cellW, r*rh, Math.max(cellW,1), rh-0.5);
+      }
+    });
+    ctx.globalAlpha=1;
+    $('#hmCap').innerHTML = `Dollar position per asset (${nR} rows, sorted by exposure) × ${days} days — <span style="color:${posC}">blue long</span>, <span style="color:${negC}">red short</span>, opacity = size toward the limit.`;
+    // hover
+    cv.onmousemove=ev=>{
+      const rect=cv.getBoundingClientRect();
+      const d=Math.floor((ev.clientX-rect.left)/(rect.width/days));
+      const r=Math.floor((ev.clientY-rect.top)/(rect.height/nR));
+      if(d<0||d>=days||r<0||r>=nR){ hideTT(); return; }
+      const ri=rows[r], v=s.posMatrix[d][ri];
+      showTT(`<b>${names[ri]}</b> · day ${d+1}<br><span class="dim">position</span> ${v>0?'+':''}$${fmt(v)}`,ev);
+    };
+    cv.onmouseleave=hideTT;
+  }
+
+  // =================== EDGE ===================
+  function renderEdge(){
+    const R=DATA.research, rb=R.robust;
+    if(rb){
+      const tiles=[
+        ['Cross-sectional IC', '+'+rb.obs_ic.toFixed(3), `t = ${rb.tstat.toFixed(1)} · ${rb.pos}% positive days`],
+        ['Permutation p', '< 0.001', `null IC 0.000 ± ${rb.null_sd.toFixed(3)}`],
+        ['Bootstrap 95% CI', `[+${rb.ci_lo.toFixed(3)}, +${rb.ci_hi.toFixed(3)}]`, 'lower bound clearly positive'],
+        ['Net Sharpe', rb.net_sharpe.toFixed(2), `gross ${rb.gross_sharpe.toFixed(2)} · after 1bp @ ${rb.turnover.toFixed(2)}× turnover`],
+      ];
+      $('#edgeTiles').innerHTML=tiles.map(([k,v,n])=>`<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`).join('');
+    }
+    // bake-off
+    if(R.sweep){
+      const items=R.sweep.map(d=>{
+        const killed = d.ic<0.01;
+        const hero = d.model==='OLS'||d.model==='Ridge 0.1';
+        return {label:d.model.replace('Ridge','R'), val:d.ic,
+          color: d.ic<0? '--neg' : hero? '--cat1' : killed? '--muted':'--cat2',
+          dim: killed,
+          tip:`<b>${d.model}</b><br>IC <b>${d.ic>=0?'+':''}${d.ic.toFixed(4)}</b> · t=${d.t.toFixed(2)} · ${d.pos}% pos`};
+      });
+      barChart($('#chart-edge-sweep'), items, {W:560,H:260,yFmt:v=>v.toFixed(3),rot:true});
+    }
+    // warm-up stability
+    if(R.warm){
+      lineChart($('#chart-edge-warm'), {W:560,H:250,baseline0:false,yFmt:v=>v.toFixed(3),
+        xLabels:i=>{const w=R.warm[i]; return 'start t₀='+w.t0;},
+        series:[{name:'walk-forward IC', color:'--cat1', data:R.warm.map(w=>w.ic), w:2.2,
+          tip:v=>'+'+v.toFixed(4)}]});
+    }
+    // hedge comparison
+    if(R.hedge && R.hedge.variants){
+      const v=R.hedge.variants, lab=R.hedge.hedgeLabels||{};
+      const order=['none','dollar','beta'];
+      const items=order.filter(k=>v[k]).map(k=>({label:(lab[k]||k).replace('via ',''), val:v[k].sharpe,
+        color: k==='beta'?'--cat1':'--cat2', dim:k!=='beta',
+        tip:`<b>${lab[k]||k}</b><br>Sharpe <b>${v[k].sharpe.toFixed(2)}</b> · Score ${fmt(v[k].score)}<br>net β std $${k$(v[k].betaStd)}`}));
+      barChart($('#chart-edge-hedge'), items, {W:560,H:250,yFmt:v=>v.toFixed(2),y0:true});
+    }
+    // lead-lag
+    if(R.leadlag && R.leadlag.meta){
+      const m=R.leadlag.meta;
+      const items=[
+        {label:'noise band', val:m.noise, color:'--muted', dim:true, tip:`<b>noise band</b><br>max shuffled lead-lag ${m.noise.toFixed(3)}`},
+        {label:'max link', val:m.maxLL, color:'--cat1', tip:`<b>strongest link</b><br>${m.maxLL.toFixed(3)} — ${(m.maxLL/m.noise).toFixed(1)}× the noise band`},
+        {label:'ALGO leads', val:m.algoLeads, color:'--cat2', tip:`ALGO→others ${m.algoLeads.toFixed(3)}`},
+        {label:'ALGO lags', val:m.algoLags, color:'--cat3', tip:`others→ALGO ${m.algoLags.toFixed(3)}`},
+      ];
+      barChart($('#chart-edge-leadlag'), items, {W:560,H:210,yFmt:v=>v.toFixed(3)});
+      const extra=document.createElement('div'); extra.className='legend'; extra.style.marginTop='10px';
+      extra.innerHTML = `<span class="chip">${m.nEdges} directed edges > ${m.edgeThr}</span>
+        <span class="chip">sign stability <b>${(m.signKeep*100).toFixed(0)}%</b></span>
+        <span class="chip">${m.nFactors} factors · ${(m.noiseShare*100).toFixed(0)}% noise</span>`;
+      $('#chart-edge-leadlag').appendChild(extra);
+    }
+  }
+
+  // =================== PANELS / NAV ===================
+  function setPanel(p){
+    ['overview','detail','edge'].forEach(x=> $('#panel-'+x).classList.toggle('hidden', x!==p));
+    document.querySelectorAll('#nav .navbtn').forEach(b=> b.classList.toggle('on', b.dataset.panel===p));
+    if(p==='detail') renderDetail();
+    if(p==='edge') renderEdge();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  document.querySelectorAll('#nav .navbtn').forEach(b=> b.addEventListener('click',()=>setPanel(b.dataset.panel)));
+
+  // theme
+  let theme = matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  function applyTheme(){ document.documentElement.setAttribute('data-theme',theme); rerender(); }
+  $('#themeBtn').addEventListener('click',()=>{ theme=theme==='dark'?'light':'dark'; applyTheme(); });
+
+  function rerender(){
+    renderOverview(); renderPicker();
+    if(!$('#panel-detail').classList.contains('hidden')) renderDetail();
+    if(!$('#panel-edge').classList.contains('hidden')) renderEdge();
+  }
+  let rt; addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(rerender,180); });
+
+  $('#foot').innerHTML = `Generated ${DATA.generated} · all metrics reproduced through the official <b>eval.py</b> accounting (integer shares, $10k/$100k position limits, 1bp / 0.2bp commissions) on the scored last ${N} of ${U.nDays} days.
+    Strategies: <span class="mono">ols_strategy.py</span> · <span class="mono">ols_max.py</span> · <span class="mono">ols_adaptive.py</span> (submission). Regenerate with <span class="mono">python showcase_data.py && python build_showcase.py</span>.`;
+
+  applyTheme();
+  renderPicker();
+  renderOverview();
+})();
+</script>
