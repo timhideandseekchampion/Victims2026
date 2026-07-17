@@ -1,0 +1,68 @@
+
+==============================================================================
+13A. DECOMPOSITION - variance / structure captured
+==============================================================================
+PCA top-5 cum var: [0.227, 0.282, 0.321, 0.346, 0.37]
+Decomposition fits complete (PCA/KernelPCA/ICA/FA/SVD/NMF).
+
+==============================================================================
+13B. COVARIANCE ESTIMATORS - conditioning & structure
+==============================================================================
+GraphicalLasso precision-matrix zero-fraction: 0.54 (high => few real conditional dependencies)
+LedoitWolf shrinkage: 0.051 (high => sample cov noisy)
+
+==============================================================================
+13C. FEATURE DEPENDENCE - lagged returns -> next return
+==============================================================================
+Feature -> next-return dependence (pooled 24k samples):
+  own_lag1: MI=0.00664  F=0.11 (p=0.744)  r=+0.0021
+  own_lag2: MI=0.01103  F=6.51 (p=0.0107)  r=-0.0161
+  own_lag3: MI=0.00000  F=0.11 (p=0.738)  r=-0.0021
+  mkt_lag1: MI=0.01533  F=1.15 (p=0.284)  r=+0.0067
+
+==============================================================================
+13D. CROSS-DECOMPOSITION - lagged matrix -> next-day matrix (CCA/PLS)
+==============================================================================
+CCA canonical correlations (lagged->next): [0.725, 0.647, 0.605]
+  permutation p-value on 1st canonical corr: 0.000
+PLS in-sample R^2 (lag->next, 3 comp): 0.02413
+
+==============================================================================
+13E. CLUSTERING VALIDITY (is there real instrument cluster structure?)
+==============================================================================
+  KMeans5: silhouette=-0.135 nclusters=5
+  Agg5: silhouette=0.043 nclusters=5
+  Spectral5: silhouette=0.020 nclusters=5
+  DBSCAN: silhouette=nan nclusters=1
+
+==============================================================================
+13F. MANIFOLD RECONSTRUCTION ERROR (nonlinear structure in day-space)
+==============================================================================
+Manifold embeddings fit (Isomap/LLE).
+
+==============================================================================
+13G. OUTLIER / ANOMALOUS DAY DETECTION
+==============================================================================
+  IsolationForest: 25/499 anomalous days flagged
+  EllipticEnvelope: 25/499 anomalous days flagged
+
+==============================================================================
+13H. PREDICTIVE MODELS - walk-forward OOS R^2 (14 models + shuffled)
+==============================================================================
+model                   OOS_R2  shuffled
+LinearRegression      -0.00209  -0.00125
+Ridge                 -0.00092  -0.00086
+Lasso                 -0.00015  -0.00119
+ElasticNet            -0.00015  -0.00033
+Huber                 -0.00195  -0.00179
+KNN                   -0.01818  -0.02529
+SVR_rbf               -0.05075  -0.19916
+RandomForest           0.00359  -0.00130
+ExtraTrees             0.00140  -0.00156
+GradientBoosting       0.00420  -0.00499
+HistGBM                0.00448  -0.00835
+AdaBoost              -0.00177  -0.00470
+Bagging               -0.05200  -0.06369
+MLP                        nan       nan
+
+[sklearn_full] recorded 62 tests; 5 with p-values; 2 raw-significant (p<0.05). -> /home/SIG2026/algo26v2/analysis/results/sklearn_full.csv

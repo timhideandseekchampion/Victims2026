@@ -1,0 +1,60 @@
+
+==============================================================================
+22A. JOHANSEN BASKET/TRIPLET COINTEGRATION SEARCH
+==============================================================================
+Trace test on triplets. r>=1 with trace>95% crit => a stationary combo exists.
+Search: each FDR pair extended by every 3rd instrument (train on days 0..250).
+
+  AENO+NWIG+RRES : trace(r=0)= 43.3 rank=1 spread-ADF p=0.0000
+  EORC+NGTE+EELT : trace(r=0)= 42.5 rank=1 spread-ADF p=0.0000
+  HETT+ULXY+MHRM : trace(r=0)= 55.8 rank=1 spread-ADF p=0.0006
+  SMAH+ILVX+GARI : trace(r=0)= 68.0 rank=2 spread-ADF p=0.0000
+  HUXZ+ACAC+FCSG : trace(r=0)= 31.5 rank=1 spread-ADF p=0.0012
+  CTGI+EELT+GARI : trace(r=0)= 47.0 rank=2 spread-ADF p=0.0000
+
+Triplets with >=1 cointegrating relation found: 6
+
+Backtest of the triplet-basket strategy (last 250 days):
+  lookback=60 entry_z=0.5: Sharpe  3.41  score   64.33  mean $ 69.87
+  lookback=60 entry_z=0.75: Sharpe  3.41  score   59.94  mean $ 65.09
+  lookback=60 entry_z=1.0: Sharpe  3.52  score   58.09  mean $ 62.78
+  lookback=90 entry_z=0.5: Sharpe  3.35  score   63.76  mean $ 69.45
+  lookback=90 entry_z=0.75: Sharpe  4.03  score   71.13  mean $ 75.51
+  lookback=90 entry_z=1.0: Sharpe  3.91  score   63.98  mean $ 68.16
+
+==============================================================================
+22B. ORNSTEIN-UHLENBECK OPTIMAL ENTRY/EXIT/STOP BANDS (pairs)
+==============================================================================
+Fit OU (AR(1)) to each pair spread -> theta, half-life. Then grid-search
+entry / exit / stop z-bands to maximize eval.py score.
+
+  AENO-NWIG: OU theta=0.197  half-life=3.5d
+  EORC-NGTE: OU theta=0.135  half-life=5.1d
+  HETT-ULXY: OU theta=0.100  half-life=7.0d
+  SMAH-ILVX: OU theta=0.128  half-life=5.4d
+  HUXZ-ACAC: OU theta=0.126  half-life=5.5d
+  CTGI-EELT: OU theta=0.098  half-life=7.0d
+
+Grid search (entry / exit / stop) — score via eval.py:
+ entry  exit  stop  Sharpe    Score
+  0.75  0.00  none    0.58     4.52
+  0.75  0.25  none    3.06    75.13
+  0.75  0.50  none    3.99    96.55
+  1.00  0.00  none    0.61     5.09
+  1.00  0.25  none    3.52    84.70
+  1.00  0.50  none    4.35   100.05
+  1.50  0.00  none    0.56     3.91
+  1.50  0.25  none    2.94    58.00
+  1.50  0.50  none    3.55    65.02
+  2.00  0.00  none    0.91    12.25
+  2.00  0.25  none    2.69    41.31
+  2.00  0.50  none    2.86    39.08
+
+BEST OU bands: entry=1.0 exit=0.5 stop=4.0
+  -> Sharpe 4.35  score 100.05  mean $105.34
+
+==============================================================================
+22C. VERDICT
+==============================================================================
+Baskets vs pairs: see 22A scores. OU hysteresis bands vs always-in |z|>entry:
+  best OU-band score 100.05 (entry 1.0, exit 0.5, stop 4.0)

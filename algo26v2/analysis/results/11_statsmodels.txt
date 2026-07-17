@@ -1,0 +1,74 @@
+
+==============================================================================
+11A. UNIT ROOT / STATIONARITY (4 tests x prices & returns)
+==============================================================================
+ADF rejects unit root on price (stationary): 4/51
+KPSS says price non-stationary:              49/51
+Range-unit-root rejects:                     4/51
+Zivot-Andrews (allows 1 break) rejects:      3/51
+
+==============================================================================
+11B. AUTOCORRELATION (Ljung-Box multi-lag, Box-Pierce, Breusch-Godfrey, DW)
+==============================================================================
+Significant Ljung-Box at lag10 (p<0.05): 1/51
+
+==============================================================================
+11C. CROSS-CORRELATION ALGO->name (lead-lag) at lags 1..5
+==============================================================================
+Names with |lag-1 cross-corr to ALGO|>2sigma: 6/50
+
+==============================================================================
+11D. GRANGER CAUSALITY full: ALGO->name and name->ALGO
+==============================================================================
+ALGO Granger-causes name: 9/50 | name Granger-causes ALGO: 2/50
+
+==============================================================================
+11E. HETEROSKEDASTICITY (ARCH-LM, Breusch-Pagan, White, Goldfeld-Quandt)
+==============================================================================
+ARCH-LM sig: 1/51 | Breusch-Pagan sig: 2/51 | White sig: 0/51
+
+==============================================================================
+11F. SPECIFICATION / LINEARITY (RESET, Harvey-Collier, Rainbow)
+==============================================================================
+RESET nonlinearity in name~market (p<0.05): 2/51
+
+==============================================================================
+11G. STRUCTURAL BREAKS (CUSUM OLS residuals)
+==============================================================================
+CUSUM structural break (p<0.05): 0/51
+
+==============================================================================
+11H. ROBUST MOMENTS + OMNIBUS NORMALITY
+==============================================================================
+
+==============================================================================
+11I. ARMA ORDER SELECTION - does any ARMA beat white noise (0,0)?
+==============================================================================
+Instruments whose BIC-best ARMA != white noise (0,0): 1/51
+
+==============================================================================
+11J. SEASONAL DECOMPOSITION STRENGTH (STL, period=5 & 21)
+==============================================================================
+STL seasonal strength period=5: mean 0.061 (>0.3 would indicate real seasonality)
+STL seasonal strength period=21: mean 0.103 (>0.3 would indicate real seasonality)
+
+==============================================================================
+11K. MARKOV REGIME SWITCHING (2-state, subset: ALGO + market + 6 names)
+==============================================================================
+  ALGO: 2-state Markov llf=1594.5, persistence=[0.74, 0.29]
+  AMRP: 2-state Markov llf=1083.4, persistence=[0.93, 0.31]
+  SMAH: 2-state Markov llf=1214.5, persistence=[0.71, 0.24]
+  NWIG: 2-state Markov llf=1216.1, persistence=[0.0, 0.93]
+  RCRI: 2-state Markov llf=986.2, persistence=[0.9, 0.41]
+  ULXY: 2-state Markov llf=1028.9, persistence=[0.16, 0.91]
+  EAFC: 2-state Markov llf=1176.7, persistence=[0.25, 0.95]
+
+==============================================================================
+11L. MULTIPLE-TESTING CORRECTION on cointegration (Benjamini-Hochberg)
+==============================================================================
+Cointegration pairs: 1275 tested
+  raw p<0.05: 92  |  BH-FDR 5% survivors: 5  |  Bonferroni: 4
+  => 5 pairs are cointegrated after honest multiple-testing correction
+
+[statsmodels_full] recorded 2144 tests; 1528 with p-values; 162 raw-significant (p<0.05). -> /home/SIG2026/algo26v2/analysis/results/statsmodels_full.csv
+STATSMODELS EXIT 0

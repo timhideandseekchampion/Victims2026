@@ -1,0 +1,11 @@
+library,family,test,target,statistic,pvalue,note
+pytorch,dl_predict,MLP_oos_r2,pooled,-0.22211956977844238,,dir_acc=0.5039
+pytorch,dl_predict,GRU_oos_r2,pooled,-0.10564529895782471,,dir_acc=0.4823
+pytorch,dl_predict,Conv1D_oos_r2,pooled,-0.07376265525817871,,dir_acc=0.4833
+pytorch,dl_autoencoder,AE_recon_r2_8dim,cross-section,0.35524782538414,,
+tensorflow,dl_predict,LSTM_oos_r2,pooled,0.0006810426712036133,,dir_acc=0.5193
+tensorflow,dl_predict,GRU_oos_r2,pooled,0.0002313852310180664,,dir_acc=0.5129
+tensorflow,dl_predict,Conv1D_oos_r2,pooled,-0.0006605386734008789,,dir_acc=0.5121
+tensorflow,dl_predict,Transformer_oos_r2,pooled,0.0006980299949645996,,dir_acc=0.5219
+tensorflow,dl_predict,MLP_oos_r2,pooled,-0.0028831958770751953,,dir_acc=0.5126
+tensorflow,dl_autoencoder,AE_recon_r2_8dim,cross-section,0.37474884854932566,,

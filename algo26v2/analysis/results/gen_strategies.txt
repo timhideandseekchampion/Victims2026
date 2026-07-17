@@ -1,0 +1,11 @@
+generated 8 strategies in /home/SIG2026/algo26v2/analysis/strategies
+
+strategy                         Sharpe  Score  mean$ first125  last125
+strategy_1_pairs                   3.90    329    351      510       94
+strategy_2_pairs_algo              4.21    477    504      714      186
+strategy_3_pairs_algo_lead         4.43    538    565      731      269
+strategy_4_broad                   3.32    413    450      592      205
+strategy_5_tangency                3.87    463    494      578      285
+strategy_6_highSharpe              4.69    465    486      621      312
+strategy_7_kitchen_sink            3.54    447    483      611      245
+strategy_8_aggressive              4.29    533    562      725      260

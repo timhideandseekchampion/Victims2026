@@ -1,0 +1,13 @@
+
+==============================================================================
+27. FIXED-PAIR HIGH-SCORE SEARCH (Sharpe/Score/mean$/vol[M]  |  last125 score)
+==============================================================================
+config                       Sharpe  Score  mean$   vol  last125
+6 pairs $10k e1.0/x0.5         4.19    118    125    4M      120
+24 pairs $10k e1.0/x0.5        4.72    259    271   10M      153
+24 pairs $10k e0.75            4.38    246    259   12M      156
+24 pairs always-in e0.75/x0   -1.26    -95    -95    2M      -79
+24p + ALGO$100k                4.44    403    423   24M      238
+24p + ALGO + corr$9k           3.00    285    316   29M      277
+24p+ALGO+corr+xs (all)         2.66    264    301   38M      333
+40p+ALGO+corr+xs BIG           2.91    308    345   39M      376

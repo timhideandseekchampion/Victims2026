@@ -21,6 +21,7 @@ state per run so the module cache never leaks a future fit across origins.
 import sys
 import numpy as np
 import pandas as pd
+from extra_signals import drift_tilt_forecast, index_spread_positions, coint_pairs_positions  # speculative overlays (quarantined)
 
 PRICES = "./prices.txt"
 NINST_ALGO = 0                 # column 0 is the ALGO index (10x cap, 0.2bp commission)
@@ -32,6 +33,10 @@ DEFAULT_CFG = dict(
     alpha_adaptive=False,          # if True: shrinkage decays as alpha*min(1, 500/n) — less regularization with more data
     view_scale=False,              # if True: scale book gross by today's forecast dispersion vs its trailing median (per-day conviction gate)
     view_floor=0.3, view_win=60,   # view_scale params
+    # --- borderline STANDALONE signals from the hunts, wired as pre-registered OOS candidates (2026-07-14) ---
+    drift_tilt=0.0, drift_win=60,  # tilt sizing toward cross-sec-DEMEANED trailing drift (idiosyncratic drift-continuation; in-sample EV~0 since idio drift=0, +EV iff forward drift appears). Market-neutral by construction (not beta).
+    index_spread=0.0,              # $: long ALGO / short equal-weight basket (index-vs-constituents spread, in-sample t=3.47 real but capture cannibalizes book — OOS re-tests if still Score-negative)
+    coint_pairs=0.0,               # $ per leg: Engle-Granger cointegration pairs overlay (reselect every 25d from past data only; in-sample Sharpe 2.58 but phase-sensitive)
 )
 
 
@@ -76,6 +81,8 @@ def build_getpos(cfg):
         B, mx, my = cache["model"]
         pred = (0.0 if c["drop_intercept"] else my) + (ret[:, -1] - mx) @ B
         w = pred - pred.mean()
+        if c["drift_tilt"] != 0:                          # speculative: idiosyncratic drift-continuation tilt
+            w = drift_tilt_forecast(w, ret, c["drift_tilt"], c["drift_win"])
         sized = np.sign(w) * (c["limit"] / prcSoFar[1:, -1])
         if c["conv_z"] > 0:
             keep = np.abs(w) >= c["conv_z"] * (np.std(w) + 1e-12)
@@ -104,6 +111,11 @@ def build_getpos(cfg):
             hedge_sh = -net_beta / prcSoFar[0, -1]
         room = max(cap_sh - abs(rev_sh), 0.0)
         pos[0] = rev_sh + float(np.clip(hedge_sh, -room, room))
+
+        # speculative standalone overlays (see extra_signals.py) — off unless the cfg flag is set
+        index_spread_positions(pos, prcSoFar, c["index_spread"])
+        coint_pairs_positions(pos, lp, prcSoFar, cache, t, c["coint_pairs"])
+
         return pos.astype(int)
 
     return getMyPosition
@@ -176,10 +188,16 @@ CANDIDATE_BATTERY = {
     "HL1000":              dict(half_life=1000),                      # pin the memory curve between 500 and expanding
     "HL1500":              dict(half_life=1500),
     "alpha 0.01":          dict(half_life=2000, alpha=0.01),          # LW-implied shrinkage; may win ONLY with more data
-    "alpha adaptive":      dict(half_life=2000, alpha_adaptive=True), # STRONG prior: shrinkage should decay ~1/n as data grows
+    # "alpha adaptive" REMOVED 2026-07-15: DGP-simulator test showed optimal absolute alpha is FLAT/slightly-RISING
+    # with data (not ~1/n), so alpha*500/n is backwards & mildly harmful. Alpha is a non-lever (IC flat +-1% over 0.02-0.2).
     "alpha0.05 + lean":    dict(half_life=2000, alpha=0.05, contra_dollars=0),   # stack two independent robustness moves
     "day-gate view-scale": dict(half_life=2000, view_scale=True),     # NEW mechanism; WEAK prior (dispersion ~0 edge-predictive) — close it on OOS
     "v5 (WZ20 + noHedge)": dict(half_life=2000, contra_wz=20, hedge=False),  # user's last-250-tuned config — OOS will confirm/refute
+    # --- borderline STANDALONE signals from the hunts (2026-07-14): "a little correlation & p-stat" -> adjudicate OOS ---
+    "drift-tilt 0.5":      dict(half_life=2000, drift_tilt=0.5),      # idiosyncratic drift-continuation; the KEY one — in-sample ~0-EV (idio drift=0), +EV iff drift appears forward
+    "drift-tilt 1.0":      dict(half_life=2000, drift_tilt=1.0),
+    "index-spread 8k":     dict(half_life=2000, index_spread=8_000),  # long ALGO/short basket; in-sample t=3.47 signal but Score-negative (cannibalizes) — does OOS overturn?
+    "coint-pairs 8k":      dict(half_life=2000, coint_pairs=8_000),   # Engle-Granger overlay; in-sample Sharpe 2.58 but phase-sensitive
 }
 
 # --- comprehensive one-at-a-time sensitivity sweep (every real variable), pre-registered 2026-07-14 ---
@@ -194,6 +212,7 @@ SWEEP_GRID = {
     "contra_clip":    [1.5, 2.0, 3.0, 4.0, 5.0],
     "drop_intercept": [False, True],
     "hedge":          [True, False],
+    "drift_tilt":     [0.0, 0.25, 0.5, 1.0, 2.0],   # idiosyncratic drift-continuation: beats v4 OOS only if forward drift is nonzero
 }
 
 

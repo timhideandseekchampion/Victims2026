@@ -1,0 +1,128 @@
+
+==============================================================================
+MASTER AGGREGATION - EVERY TEST RUN
+==============================================================================
+CSV files combined: ['arch_full.csv', 'deep_learning_full.csv', 'scipy_full.csv', 'sklearn_full.csv', 'statsmodels_full.csv']
+Total test rows recorded: 5084
+Rows with a p-value: 3942
+Rows reporting only a statistic (no p): 1142
+
+==============================================================================
+SIGNIFICANCE FUNNEL (honest multiple-testing view)
+==============================================================================
+  raw p<0.05:                739  (expected under pure noise ~197)
+  survive BH-FDR 5%:         523
+  survive Bonferroni 5%:     413
+
+==============================================================================
+WHAT SURVIVES FDR, BROKEN DOWN BY TEST FAMILY
+==============================================================================
+    library      family                test  n_survive
+statsmodels    unitroot          adf_return         51
+      scipy corr_vsALGO             pearson         50
+      scipy corr_vsALGO             kendall         50
+      scipy corr_vsALGO            spearman         50
+      scipy  corr_vsMKT             pearson         50
+      scipy  corr_vsMKT            spearman         50
+      scipy  corr_vsMKT             kendall         50
+      scipy       trend    linregress_slope         47
+       arch    unitroot                KPSS         45
+      scipy    dist_fit           ks_cauchy         43
+       arch       coint   phillips_ouliaris          7
+       arch       coint       engle_granger          7
+      scipy    dist_fit          ks_laplace          6
+      scipy    dist_fit    ks_genhyperbolic          5
+statsmodels     granger     granger_algo_to          3
+       arch    unitroot               DFGLS          1
+       arch    unitroot        ZivotAndrews          1
+      scipy       cross   levene_var_51inst          1
+statsmodels      hetero             arch_lm          1
+    sklearn crossdecomp     cca_canoncorr_1          1
+statsmodels      hetero     goldfeld_quandt          1
+statsmodels       model            ar1_coef          1
+statsmodels        spec             rainbow          1
+statsmodels    unitroot zivot_andrews_price          1
+
+==============================================================================
+RAW-SIGNIFICANT COUNTS BY FAMILY (before correction, for context)
+==============================================================================
+    library       family  n_tests  n_raw_sig  n_bh_sig  expected_fp  excess
+      scipy   corr_vsMKT      150        150       150          7.5   142.5
+      scipy  corr_vsALGO      150        150       150          7.5   142.5
+statsmodels     unitroot      255        111        52         12.8    98.2
+      scipy     dist_fit      459         86        54         23.0    63.0
+       arch     unitroot      306         69        47         15.3    53.7
+      scipy        trend       51         48        47          2.6    45.4
+       arch        coint       14         14        14          0.7    13.3
+statsmodels      granger      100         11         3          5.0     6.0
+      scipy regime_2samp      714         40         0         35.7     4.3
+    sklearn  crossdecomp        1          1         1          0.0     1.0
+    sklearn     feat_dep        4          1         0          0.2     0.8
+      scipy        cross        4          1         1          0.2     0.8
+statsmodels         spec      153          8         1          7.6     0.4
+statsmodels    normality       51          2         0          2.6    -0.6
+statsmodels        model       51          1         1          2.6    -1.6
+statsmodels        break       51          0         0          2.6    -2.6
+statsmodels       hetero      204          5         2         10.2    -5.2
+      scipy         sign      204          5         0         10.2    -5.2
+      scipy    normality      357         12         0         17.8    -5.8
+statsmodels     autocorr      663         24         0         33.2    -9.2
+
+==============================================================================
+TOP 40 STRONGEST FINDINGS (lowest q-value)
+==============================================================================
+    library      family              test    target  statistic        pvalue          q_bh     note
+statsmodels    unitroot        adf_return      MTNS -22.409318  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      LSST -22.030157  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      OTCS -22.738093  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      HUXZ -23.076490  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      DUCT -23.381224  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      SMAH -22.124446  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      MSDP -22.427830  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      EORC -22.713844  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      CUBO -23.825941  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      HRET -24.033103  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      ANSO -25.122994  0.000000e+00 1.037368e-298      NaN
+    sklearn crossdecomp   cca_canoncorr_1 lag->next   0.724729  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      AENO -21.641855  0.000000e+00 1.037368e-298      NaN
+      scipy       cross levene_var_51inst       ALL  70.341600  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      ALUT -20.705448  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      SRTX -21.717647  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      MHRM -23.596943  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      BENI -21.452215  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      ITPA -21.310032  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      HTRK -23.555795  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      NGTE -23.494737  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      ILVX -20.777377  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      FCSG -21.422130  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      FARS -23.631640  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      IHOZ -21.037952  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      RCRI -20.861649  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      ACIX -21.085023  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      CCNS -22.535625  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      HRND -22.322327  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      FWWG -22.212864  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      AETS -23.032617  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      BLBT -23.927072  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      RTTH -21.129611  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      NWIG -22.814868  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      MMBT -22.063438  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      AGVF -23.517722  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      CTGI -21.943545  0.000000e+00 1.037368e-298      NaN
+statsmodels    unitroot        adf_return      RRES -21.669331  0.000000e+00 1.037368e-298      NaN
+      scipy       trend  linregress_slope      NPCK  -0.020142 2.449502e-236 2.475882e-234 r2=0.885
+      scipy       trend  linregress_slope      GARI  -0.015521 5.478016e-227 5.398585e-225 r2=0.875
+
+Full ranked table -> results/MASTER_RESULTS.csv (3942 rows with p-values)
+
+==============================================================================
+PLAIN-LANGUAGE SUMMARY
+==============================================================================
+- Distribution/normality findings surviving FDR: 0
+- Cointegration findings surviving FDR:          14
+- Correlation (vs ALGO/market) surviving FDR:    300
+- Trend findings surviving FDR:                  47
+- Autocorrelation findings surviving FDR:        0
+- Granger findings surviving FDR:                3
+- Heteroskedasticity findings surviving FDR:     2
+- Regime/2-sample findings surviving FDR:        0

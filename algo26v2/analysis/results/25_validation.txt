@@ -1,0 +1,17 @@
+
+==============================================================================
+25. FINAL-BOOK ROBUSTNESS: weight variants x windows (Sharpe / Score)
+==============================================================================
+variant                          FULL 250d        first 125d         last 125d   $vol(M)
+full stack                 2.86/   190.5   1.24/    57.7   4.61/   317.5      55.7
+no lead-lag/xs (lean)      2.66/   133.9   2.95/   151.9   2.38/   115.6      15.9
+pairs+ALGO only            2.57/   119.3   3.54/   178.5   1.57/    58.3      12.3
+pairs+ALGO+corr            2.36/   123.2   2.12/   109.4   2.61/   136.9      18.3
+equal weights              2.14/   151.9  -0.12/   -11.4   4.86/   366.0      52.0
+pairs-heavy                2.84/   149.6   1.61/    71.9   4.22/   224.1      33.6
+
+==============================================================================
+VERDICT
+==============================================================================
+Pick the variant with the best WORST-window score (robust), not the best
+full-sample score. Lower $volume = less commission drag = more durable.

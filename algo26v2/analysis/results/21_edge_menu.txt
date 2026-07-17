@@ -1,0 +1,40 @@
+
+==============================================================================
+EDGE MENU - standalone score of every candidate signal (last 250 days)
+==============================================================================
+
+signal                    family         mean$  Sharpe    Score        $vol
+Kalman dynamic pairs      pairs         156.97    5.95   152.67     7493799  <-- EDGE
+Corr-vs-ALGO residual     factor         79.59    1.64    57.95    11599209  <-- EDGE
+ALGO timing (revert 5d)   factor         61.07    2.40    52.02     5602388  <-- EDGE
+Lead-lag cross-predict    lead-lag       38.47    1.26    23.64    43997551  <-- EDGE
+XS reversal 10d           mean-rev       39.52    0.81    15.72    17022191  <-- EDGE
+Bollinger 20d             mean-rev       25.43    0.75     9.23    15020828  <-- EDGE
+PC(5)-residual reversal   mean-rev       21.71    0.58     5.40    53319228  <-- EDGE
+XS reversal 5d            mean-rev       24.31    0.53     5.38    23759531  <-- EDGE
+XS reversal 3d            mean-rev        6.57    0.15     0.14    30291237
+PC(3)-residual reversal   mean-rev      -13.53   -0.34   -13.53    52824381
+XS reversal 1d            mean-rev      -13.61   -0.29   -13.61    52662419
+ALGO timing (mom 20d)     factor        -37.11   -1.45   -37.11     2264881
+XS momentum 5d            momentum      -43.30   -0.95   -43.30    23759531
+TS momentum 60d           momentum      -56.08   -1.49   -56.08     6116723
+TS momentum 120d          momentum      -61.12   -2.04   -61.12     4679501
+GBM ML cross-section      ML            -63.06   -1.66   -63.06    37760917
+XS momentum 60d           momentum      -66.24   -1.50   -66.24     7290963
+XS momentum 20d           momentum      -75.75   -1.59   -75.75    12328130
+
+==============================================================================
+VERDICT: addable edges (Sharpe>0.5 & Score>5, standalone)
+==============================================================================
+  Kalman dynamic pairs       (pairs): Sharpe 5.95, score 152.7
+  Corr-vs-ALGO residual      (factor): Sharpe 1.64, score 58.0
+  ALGO timing (revert 5d)    (factor): Sharpe 2.40, score 52.0
+  Lead-lag cross-predict     (lead-lag): Sharpe 1.26, score 23.6
+  XS reversal 10d            (mean-rev): Sharpe 0.81, score 15.7
+  Bollinger 20d              (mean-rev): Sharpe 0.75, score 9.2
+  PC(5)-residual reversal    (mean-rev): Sharpe 0.58, score 5.4
+  XS reversal 5d             (mean-rev): Sharpe 0.53, score 5.4
+
+8 standalone positive edges found. Mean-reversion / stat-arb
+dominates; momentum & directional signals are flat-to-negative (as the
+autocorrelation & variance-ratio nulls predicted).

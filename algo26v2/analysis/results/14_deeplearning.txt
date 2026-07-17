@@ -1,0 +1,20 @@
+
+==============================================================================
+14A. PyTorch models
+==============================================================================
+  pytorch/MLP: OOS R2=-0.22212  dir_acc=0.5039
+  pytorch/GRU: OOS R2=-0.10565  dir_acc=0.4823
+  pytorch/Conv1D: OOS R2=-0.07376  dir_acc=0.4833
+  pytorch/Autoencoder(8-dim): OOS reconstruction R2=0.3552 (high => cross-section compresses to few factors)
+
+==============================================================================
+14B. TensorFlow / Keras models
+==============================================================================
+  tensorflow/LSTM: OOS R2=0.00068  dir_acc=0.5193
+  tensorflow/GRU: OOS R2=0.00023  dir_acc=0.5129
+  tensorflow/Conv1D: OOS R2=-0.00066  dir_acc=0.5121
+  tensorflow/Transformer: OOS R2=0.00070  dir_acc=0.5219
+  tensorflow/MLP: OOS R2=-0.00288  dir_acc=0.5126
+  tensorflow/Autoencoder(8-dim): OOS reconstruction R2=0.3747
+
+[deep_learning_full] recorded 10 tests; 0 with p-values; 0 raw-significant (p<0.05). -> /home/SIG2026/algo26v2/analysis/results/deep_learning_full.csv

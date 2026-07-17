@@ -1,0 +1,52 @@
+
+==============================================================================
+23A. STANDALONE SCORE + DAILY-PnL CORRELATION BETWEEN EDGES
+==============================================================================
+edge                Sharpe    Score
+Kalman pairs          4.76   116.97
+ALGO timing 5d        2.40    52.02
+Lead-lag              1.26    23.64
+Corr-vs-ALGO          1.62    55.09
+XS reversal 10d       0.81    15.72
+Triplet basket        4.04    59.42
+
+Daily-PnL correlation matrix (low = diversifying):
+             Kalman p ALGO tim Lead-lag Corr-vs- XS rever Triplet 
+Kalman pair      1.00    -0.05     0.05     0.15     0.24     0.28
+ALGO timing     -0.05     1.00    -0.05     0.26     0.11     0.14
+Lead-lag         0.05    -0.05     1.00     0.01     0.11    -0.07
+Corr-vs-ALG      0.15     0.26     0.01     1.00     0.45     0.22
+XS reversal      0.24     0.11     0.11     0.45     1.00     0.20
+Triplet bas      0.28     0.14    -0.07     0.22     0.20     1.00
+
+==============================================================================
+23B. GREEDY INCREMENTAL STACK (add the edge that most raises score)
+==============================================================================
+step  added edge         combined Sharpe  combined Score
+   1  +Kalman pairs                 4.76          116.97
+   2  +ALGO timing 5d               5.19          176.65
+   3  +Triplet basket               5.60          219.92
+   4  +Corr-vs-ALGO                 4.13          254.08
+   5  +Lead-lag                     4.21          275.60
+   6  +XS reversal 10d              3.44          286.04
+
+Order of marginal value: Kalman pairs > ALGO timing 5d > Triplet basket > Corr-vs-ALGO > Lead-lag > XS reversal 10d
+
+==============================================================================
+23C. BEST COMBINED BOOK — tune sub-weights (coarse)
+==============================================================================
+BEST combined: Sharpe 4.68  score 320.03  mean $334.65
+  weights: {'Kalman pairs': 1.5, 'ALGO timing 5d': 2.0, 'Lead-lag': 1.0, 'Corr-vs-ALGO': 0.5, 'Triplet basket': 1.0}
+
+==============================================================================
+23D. STRICT OUT-OF-SAMPLE (tune weights on 250-375, test 375-500)
+==============================================================================
+Tuned 250-375: Sharpe 2.99 score 195.86
+Held-out 375-500: Sharpe 5.65 score 420.10  <- honest ceiling
+
+==============================================================================
+VERDICT
+==============================================================================
+The combined ceiling and the diversification (23A corr matrix) show how much
+stacking adds beyond the best single edge. Weakly-correlated edges (ALGO
+timing, lead-lag) add PnL at little Sharpe cost; the pair engines dominate risk.

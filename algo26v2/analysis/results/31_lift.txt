@@ -1,0 +1,12 @@
+
+==============================================================================
+31. RETURN-PER-DOLLAR LEVERS (Sharpe / Score / mean$ / gross$k / PnL-per-$M)
+==============================================================================
+lever                  Sharpe  Score  mean$  gross$k  PnL/$M
+A binary pairs           3.22    260    285      332   858.7
+A binary e1.25           3.22    253    278      314   884.5
+B z-proportional         2.51    193    224      324   692.8
+B z-prop zmax1.5         2.47    199    232      347   668.9
+C Kalman z-prop          1.76    106    140      306   457.4
+D MV reversion           0.67     19     61      511   119.4
+D MV reversion k5        0.76     26     71      510   139.8

@@ -1,0 +1,596 @@
+<title>prices.txt — Statistical Validation Dashboard</title>
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --panel: #ffffff;
+    --panel-2: #eef1f8;
+    --ink: #10151f;
+    --ink-soft: #47516a;
+    --ink-faint: #8a93ab;
+    --line: #dde2ee;
+    --line-strong: #c6cddf;
+    --accent: #0e7c86;         /* considered teal — the report's single accent */
+    --accent-soft: #d3ebed;
+    --good: #1f9d6b;           /* semantic: real / tradeable */
+    --good-bg: #e2f4ec;
+    --warn: #b7791f;           /* semantic: weak / spurious */
+    --warn-bg: #f8efd9;
+    --null: #b0455a;           /* semantic: no effect / below floor */
+    --null-bg: #fbe3e8;
+    --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --shadow: 0 1px 2px rgba(16,21,31,.04), 0 4px 16px rgba(16,21,31,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0a0e17;
+      --panel: #121826;
+      --panel-2: #0f1420;
+      --ink: #e8ecf5;
+      --ink-soft: #a3adc4;
+      --ink-faint: #6c7690;
+      --line: #232c40;
+      --line-strong: #33405c;
+      --accent: #3fd0d8;
+      --accent-soft: #12313a;
+      --good: #35d08a;
+      --good-bg: #0f2b21;
+      --warn: #e0ad4e;
+      --warn-bg: #2e2611;
+      --null: #f0708c;
+      --null-bg: #2f1119;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 22px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f6fb; --panel: #ffffff; --panel-2: #eef1f8; --ink: #10151f;
+    --ink-soft: #47516a; --ink-faint: #8a93ab; --line: #dde2ee; --line-strong: #c6cddf;
+    --accent: #0e7c86; --accent-soft: #d3ebed; --good: #1f9d6b; --good-bg: #e2f4ec;
+    --warn: #b7791f; --warn-bg: #f8efd9; --null: #b0455a; --null-bg: #fbe3e8;
+    --shadow: 0 1px 2px rgba(16,21,31,.04), 0 4px 16px rgba(16,21,31,.05);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a0e17; --panel: #121826; --panel-2: #0f1420; --ink: #e8ecf5;
+    --ink-soft: #a3adc4; --ink-faint: #6c7690; --line: #232c40; --line-strong: #33405c;
+    --accent: #3fd0d8; --accent-soft: #12313a; --good: #35d08a; --good-bg: #0f2b21;
+    --warn: #e0ad4e; --warn-bg: #2e2611; --null: #f0708c; --null-bg: #2f1119;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 22px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); line-height: 1.55;
+    font-size: 15px; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 0 24px 96px; }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  h1, h2, h3 { text-wrap: balance; line-height: 1.15; margin: 0; }
+  a { color: var(--accent); }
+
+  /* ---- masthead ---- */
+  header.top {
+    border-bottom: 1px solid var(--line); margin-bottom: 34px;
+    background: linear-gradient(180deg, var(--panel-2), transparent);
+  }
+  .top-inner { max-width: 1140px; margin: 0 auto; padding: 30px 24px 26px;
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+  .eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+  h1 { font-size: 30px; font-weight: 680; letter-spacing: -.01em; }
+  h1 .thin { color: var(--ink-soft); font-weight: 400; }
+  .sub { color: var(--ink-soft); font-size: 14px; margin-top: 8px; max-width: 62ch; }
+  .verdict-tag {
+    font-family: var(--mono); font-size: 12px; padding: 10px 14px;
+    border: 1px solid var(--line-strong); border-radius: 8px; background: var(--panel);
+    color: var(--ink-soft); box-shadow: var(--shadow); white-space: nowrap;
+  }
+  .verdict-tag b { color: var(--good); }
+
+  /* ---- kpi strip ---- */
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 40px; }
+  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 16px 15px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+  .kpi .n { font-family: var(--mono); font-size: 27px; font-weight: 600; letter-spacing: -.02em; }
+  .kpi .l { font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+  .kpi .cap { font-size: 11px; color: var(--ink-faint); margin-top: 6px; font-family: var(--mono); }
+  .kpi.hero .n { color: var(--good); }
+  .kpi.hero { border-color: color-mix(in srgb, var(--good) 40%, var(--line)); }
+
+  /* ---- section scaffold ---- */
+  section { margin-bottom: 44px; scroll-margin-top: 20px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .sec-num { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 600; }
+  h2 { font-size: 20px; font-weight: 650; letter-spacing: -.01em; }
+  .sec-lede { color: var(--ink-soft); font-size: 14px; margin: 4px 0 20px; max-width: 74ch; }
+
+  .panel { background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
+
+  /* ---- tables ---- */
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .scroll { overflow-x: auto; }
+  th { text-align: left; font-family: var(--mono); font-weight: 600; font-size: 11px;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--ink-faint);
+    padding: 12px 14px; border-bottom: 1px solid var(--line-strong); white-space: nowrap; }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  tbody tr:hover { background: var(--panel-2); }
+  .tkr { font-family: var(--mono); font-weight: 600; }
+
+  /* ---- status pills & stripes ---- */
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+    font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .pill.good { color: var(--good); background: var(--good-bg); }
+  .pill.warn { color: var(--warn); background: var(--warn-bg); }
+  .pill.null { color: var(--null); background: var(--null-bg); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .dot.good { background: var(--good); } .dot.warn { background: var(--warn); } .dot.null { background: var(--null); }
+
+  /* excess bar (diverging) */
+  .exbar { position: relative; height: 18px; width: 100%; min-width: 160px; }
+  .exbar .mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--line-strong); }
+  .exbar .fill { position: absolute; top: 3px; height: 12px; border-radius: 3px; }
+  .exbar .fill.pos { left: 50%; background: var(--good); }
+  .exbar .fill.neg { right: 50%; background: var(--null); }
+
+  /* sharpe bars */
+  .sbar-row { display: grid; grid-template-columns: 190px 1fr 66px; align-items: center;
+    gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .sbar-track { position: relative; height: 22px; background: var(--panel-2);
+    border-radius: 5px; overflow: hidden; }
+  .sbar-zero { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line-strong); }
+  .sbar-fill { position: absolute; top: 3px; height: 16px; border-radius: 4px; }
+  .sbar-name { font-size: 13px; }
+  .sbar-name .fam { font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); display: block; }
+  .sbar-val { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; font-size: 14px; font-weight: 600; }
+
+  /* funnel */
+  .funnel { display: flex; flex-direction: column; gap: 8px; padding: 22px; }
+  .fn-row { display: grid; grid-template-columns: 210px 1fr 130px; align-items: center; gap: 14px; }
+  .fn-track { height: 30px; background: var(--panel-2); border-radius: 6px; overflow: hidden; position: relative; }
+  .fn-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 12px;
+    color: #fff; font-family: var(--mono); font-weight: 600; font-size: 13px; }
+  .fn-lab { font-size: 13px; color: var(--ink-soft); }
+  .fn-cap { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); }
+
+  .callout { padding: 16px 18px; border-left: 3px solid var(--accent); background: var(--panel-2);
+    border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--ink-soft); }
+  .callout b { color: var(--ink); }
+
+  .statline { display: flex; flex-wrap: wrap; gap: 0; }
+  .stat { flex: 1; min-width: 130px; padding: 16px 18px; border-right: 1px solid var(--line); }
+  .stat:last-child { border-right: none; }
+  .stat .v { font-family: var(--mono); font-size: 21px; font-weight: 600; letter-spacing: -.01em; }
+  .stat .k { font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+  .stat .v.good { color: var(--good); } .stat .v.null { color: var(--null); } .stat .v.warn { color: var(--warn); }
+
+  .card-h { padding: 15px 18px 0; }
+  .card-h .t { font-size: 15px; font-weight: 640; }
+  .card-h .d { font-size: 12.5px; color: var(--ink-faint); font-family: var(--mono); margin-top: 2px; }
+  .card-b { padding: 14px 18px 18px; }
+  ul.tight { margin: 0; padding-left: 18px; color: var(--ink-soft); font-size: 13.5px; }
+  ul.tight li { margin: 5px 0; }
+  ul.tight b, ul.tight .mono { color: var(--ink); }
+
+  nav.jump { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); margin-bottom: 30px; }
+  .jump-inner { max-width: 1140px; margin: 0 auto; padding: 11px 24px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .jump a { font-family: var(--mono); font-size: 11.5px; color: var(--ink-soft); text-decoration: none;
+    padding: 5px 10px; border-radius: 6px; border: 1px solid transparent; }
+  .jump a:hover { color: var(--ink); background: var(--panel); border-color: var(--line); }
+  .theme-btn { margin-left: auto; font-family: var(--mono); font-size: 11.5px; cursor: pointer;
+    background: var(--panel); border: 1px solid var(--line); color: var(--ink-soft);
+    padding: 5px 11px; border-radius: 6px; }
+
+  footer { border-top: 1px solid var(--line); padding-top: 22px; color: var(--ink-faint); font-size: 12.5px; }
+  code { font-family: var(--mono); font-size: .92em; background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
+
+  @media (max-width: 860px) {
+    .kpis { grid-template-columns: repeat(2,1fr); }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .fn-row { grid-template-columns: 130px 1fr; } .fn-row .fn-cap { display: none; }
+    .sbar-row { grid-template-columns: 130px 1fr 56px; }
+  }
+</style>
+
+<header class="top">
+  <div class="top-inner">
+    <div>
+      <div class="eyebrow">Algothon 2026 · quantitative research</div>
+      <h1>prices.txt — <span class="thin">full statistical validation</span></h1>
+      <div class="sub">Every applicable test across six libraries — scipy, statsmodels, arch, scikit-learn, PyTorch, TensorFlow — run on 500 days × 51 instruments, with global multiple-testing correction.</div>
+    </div>
+    <div class="verdict-tag">8 ADDABLE EDGES &rarr; <b>all mean-reversion</b><br>momentum &amp; ML: negative after costs</div>
+  </div>
+</header>
+
+<nav class="jump">
+  <div class="jump-inner">
+    <a href="#funnel">Significance funnel</a>
+    <a href="#families">Signal vs noise</a>
+    <a href="#signals">Real signals</a>
+    <a href="#pairs">Cointegration</a>
+    <a href="#null">Null results</a>
+    <a href="#ml">ML · spectral · copula</a>
+    <a href="#strat">Edge menu</a>
+    <button class="theme-btn" id="themeBtn">◐ theme</button>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="kpis">
+    <div class="kpi"><div class="n mono">5,084</div><div class="l">statistical tests run</div><div class="cap">3,942 with p-values</div></div>
+    <div class="kpi"><div class="n mono">739</div><div class="l">raw significant p&lt;.05</div><div class="cap">~197 expected by chance</div></div>
+    <div class="kpi"><div class="n mono">523</div><div class="l">survive BH-FDR 5%</div><div class="cap">413 survive Bonferroni</div></div>
+    <div class="kpi hero"><div class="n mono">10</div><div class="l">addable edges found</div><div class="cap">of 20 signals · all mean-rev</div></div>
+    <div class="kpi hero"><div class="n mono">286</div><div class="l">stacked-book score</div><div class="cap">420 held-out OOS · SR 5.6</div></div>
+  </div>
+
+  <!-- ================= FUNNEL ================= -->
+  <section id="funnel">
+    <div class="sec-head"><span class="sec-num">01</span><h2>The significance funnel</h2></div>
+    <p class="sec-lede">With ~4,000 p-values, raw <code>p&lt;0.05</code> alone yields hundreds of false positives (≈197 expected under pure noise). Benjamini-Hochberg (FDR) and Bonferroni corrections separate durable structure from chance.</p>
+    <div class="panel funnel">
+      <div class="fn-row"><div class="fn-lab">Tests with a p-value</div>
+        <div class="fn-track"><div class="fn-fill" style="width:100%;background:var(--ink-faint)">3,942</div></div>
+        <div class="fn-cap">the full battery</div></div>
+      <div class="fn-row"><div class="fn-lab">Raw significant · p&lt;0.05</div>
+        <div class="fn-track"><div class="fn-fill" style="width:18.7%;background:var(--warn)">739</div></div>
+        <div class="fn-cap">≈197 = noise</div></div>
+      <div class="fn-row"><div class="fn-lab">Survive BH-FDR 5%</div>
+        <div class="fn-track"><div class="fn-fill" style="width:13.3%;background:var(--accent)">523</div></div>
+        <div class="fn-cap">mostly trivial facts</div></div>
+      <div class="fn-row"><div class="fn-lab">Survive Bonferroni 5%</div>
+        <div class="fn-track"><div class="fn-fill" style="width:10.5%;background:var(--good)">413</div></div>
+        <div class="fn-cap">strictest gate</div></div>
+    </div>
+    <p class="sec-lede" style="margin-top:14px">Most survivors are <b>trivially true</b> (returns are stationary; every name correlates with the market factor; prices carry drift). The next section strips those out to expose what is genuinely non-obvious.</p>
+  </section>
+
+  <!-- ================= FAMILIES ================= -->
+  <section id="families">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Signal vs. noise, by test family</h2></div>
+    <p class="sec-lede"><b>Excess</b> = (raw-significant count) − (false positives expected under noise). Positive = real structure; ≤ 0 = at or below the noise floor, i.e. <i>no effect</i>. Read top-down: only cointegration is a non-trivial, positive-excess, tradeable family.</p>
+    <div class="panel scroll">
+      <table>
+        <thead><tr>
+          <th>Family</th><th>Library</th><th class="num">Tests</th><th class="num">Raw sig</th>
+          <th class="num">Excess</th><th style="width:200px">Excess vs floor</th><th>Verdict</th>
+        </tr></thead>
+        <tbody id="famBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= REAL SIGNALS ================= -->
+  <section id="signals">
+    <div class="sec-head"><span class="sec-num">03</span><h2>What is genuinely there</h2></div>
+    <p class="sec-lede">Four findings survive correction and make economic sense. One is tradeable; the rest are structural or marginal.</p>
+    <div class="grid2">
+      <div class="panel">
+        <div class="card-h"><div class="t">① One common factor — and it's ALGO</div><div class="d">PCA · autoencoder · correlation</div></div>
+        <div class="statline">
+          <div class="stat"><div class="v">0.975</div><div class="k">corr(PC1, ALGO)</div></div>
+          <div class="stat"><div class="v">22.7%</div><div class="k">variance in PC1</div></div>
+          <div class="stat"><div class="v good">50/51</div><div class="k">names load on it</div></div>
+        </div>
+        <div class="card-b"><ul class="tight">
+          <li>Every one of 50 names is significantly correlated with ALGO on <b>all three</b> coefficients (Pearson/Spearman/Kendall).</li>
+          <li>An 8-dim <b>autoencoder</b> reconstructs the return cross-section at OOS R² ≈ <span class="mono">0.37</span> — three libraries agree the structure is one factor.</li>
+          <li>ALGO also has 5× cheaper commission &amp; 10× the position limit — the intended hub.</li>
+        </ul></div>
+      </div>
+      <div class="panel">
+        <div class="card-h"><div class="t">② Cointegration — the tradeable edge</div><div class="d">Engle-Granger · Phillips-Ouliaris · Johansen</div></div>
+        <div class="statline">
+          <div class="stat"><div class="v good">6</div><div class="k">pairs survive FDR</div></div>
+          <div class="stat"><div class="v good">5</div><div class="k">survive Bonferroni</div></div>
+          <div class="stat"><div class="v">4–8 d</div><div class="k">reversion half-life</div></div>
+        </div>
+        <div class="card-b"><ul class="tight">
+          <li>7 pairs at <span class="mono">p&lt;0.001</span> vs 1.3 expected — a <b>5× excess</b>, confirmed by two independent methods.</li>
+          <li>Spreads are stationary (spread-ADF <span class="mono">p&lt;0.001</span>) with fast, tradeable mean-reversion.</li>
+          <li>Detail table in §04 · full 1,275-pair scan in <code>coint_all_pairs.csv</code>.</li>
+        </ul></div>
+      </div>
+      <div class="panel">
+        <div class="card-h"><div class="t">③ Weak nonlinear predictability</div><div class="d">tree ensembles &amp; attention only</div></div>
+        <div class="statline">
+          <div class="stat"><div class="v warn">+0.4%</div><div class="k">best OOS R²</div></div>
+          <div class="stat"><div class="v warn">52.3%</div><div class="k">directional acc.</div></div>
+          <div class="stat"><div class="v null">≈ 0</div><div class="k">linear / MLP / LSTM</div></div>
+        </div>
+        <div class="card-b"><ul class="tight">
+          <li>HistGBM / GradBoost / RandomForest beat their shuffled baselines; TF Transformer &amp; LSTM reach ~52% directional.</li>
+          <li>Linear models, PyTorch MLP/GRU/CNN find <b>nothing</b> — the edge is faint and nonlinear (market-beta + mild reversion).</li>
+          <li>Caveat: cross-sectional correlation inflates naïve p-values; treat as marginal.</li>
+        </ul></div>
+      </div>
+      <div class="panel">
+        <div class="card-h"><div class="t">④ Weak one-way lead-lag</div><div class="d">Granger causality</div></div>
+        <div class="statline">
+          <div class="stat"><div class="v warn">3/50</div><div class="k">led by ALGO (FDR)</div></div>
+          <div class="stat"><div class="v">9/50</div><div class="k">raw p&lt;.05</div></div>
+          <div class="stat"><div class="v null">2/50</div><div class="k">reverse direction</div></div>
+        </div>
+        <div class="card-b"><ul class="tight">
+          <li>ALGO's move today weakly predicts CUBO, HRND, ULXY tomorrow — one-directional.</li>
+          <li>But trading it directly <b>loses money</b> after commissions (Sharpe −1.4). Real, not tradeable.</li>
+        </ul></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= COINTEGRATION PAIRS ================= -->
+  <section id="pairs">
+    <div class="sec-head"><span class="sec-num">04</span><h2>Cointegrated pairs — full detail</h2></div>
+    <p class="sec-lede">The six pairs surviving BH-FDR across all 1,275 tested. They form <b>disjoint couples</b> (each instrument in exactly one pair) — strong evidence the data generator embedded these relationships deliberately.</p>
+    <div class="panel scroll">
+      <table>
+        <thead><tr>
+          <th>Pair</th><th class="num">Coint p</th><th class="num">Hedge β</th>
+          <th class="num">Half-life</th><th class="num">Spread ADF p</th><th class="num">Return corr</th><th>Status</th>
+        </tr></thead>
+        <tbody id="pairBody"></tbody>
+      </table>
+    </div>
+    <p class="sec-lede" style="margin-top:12px"><span class="mono">p&lt;0.001</span>: 7 pairs (1.3 expected) · <span class="mono">p&lt;0.01</span>: 43 (12.8) · <span class="mono">p&lt;0.05</span>: 194 (63.8). The excess concentrates entirely in the tail — exactly what a few real relationships buried in noise looks like.</p>
+  </section>
+
+  <!-- ================= NULL RESULTS ================= -->
+  <section id="null">
+    <div class="sec-head"><span class="sec-num">05</span><h2>What is definitively <i>not</i> there</h2></div>
+    <p class="sec-lede">Each of these families sits <b>at or below</b> the false-positive floor across the whole battery — the single-name behaviour of every instrument is a Gaussian random walk with drift and constant variance.</p>
+    <div class="grid3" id="nullGrid"></div>
+  </section>
+
+  <!-- ================= ML / SPECTRAL / COPULA ================= -->
+  <section id="ml">
+    <div class="sec-head"><span class="sec-num">06</span><h2>Frequency, dependence &amp; learning</h2></div>
+    <div class="grid3">
+      <div class="panel">
+        <div class="card-h"><div class="t">Spectral &amp; wavelet</div><div class="d">scipy.signal · PyWavelets</div></div>
+        <div class="card-b"><ul class="tight">
+          <li>Spectral flatness <b>0.91</b> (1.0 = perfectly white); PSD slope <span class="mono">+0.015</span>.</li>
+          <li><b>46/51</b> spectrally white — no dominant cycle at any horizon.</li>
+          <li>Wavelet energy falls off geometrically (most at 2-day scale) — the signature of white noise.</li>
+          <li>ALGO coherence is broadband (~0.33), not a tradeable frequency.</li>
+        </ul></div>
+      </div>
+      <div class="panel">
+        <div class="card-h"><div class="t">Copula dependence</div><div class="d">Gaussian · t · Clayton · Gumbel · Frank</div></div>
+        <div class="card-b"><ul class="tight">
+          <li>Best-fit families: <b>Gaussian &amp; Frank</b> (both symmetric, zero tail dependence).</li>
+          <li>Lower-tail dep <span class="mono">0.168</span> vs upper <span class="mono">0.163</span> — asymmetry <span class="mono">+0.005</span>.</li>
+          <li>No Clayton / heavy-t wins → <b>no crash co-movement</b> to exploit.</li>
+        </ul></div>
+      </div>
+      <div class="panel">
+        <div class="card-h"><div class="t">Machine learning</div><div class="d">14 sklearn + 10 deep models</div></div>
+        <div class="card-b"><ul class="tight">
+          <li>Only tree ensembles beat shuffled baselines (HistGBM OOS R² <span class="mono">+0.0045</span>).</li>
+          <li>Clustering silhouettes ≈ 0 → structure is one continuous factor, not discrete sectors.</li>
+          <li>GraphicalLasso precision 54% zero → few dependencies beyond the factor.</li>
+          <li>CCA canonical corr 0.72 is <b>in-sample only</b> (every OOS model ≈ 0).</li>
+        </ul></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= EDGE MENU ================= -->
+  <section id="strat">
+    <div class="sec-head"><span class="sec-num">07</span><h2>Edge menu — every signal, backtested standalone</h2></div>
+    <p class="sec-lede">20 candidate alpha signals, each traded on its own and scored through <code>eval.py</code>'s exact logic (commissions, integer shares, dollar limits) on the last 250 days. Green = a real, addable edge (Sharpe&nbsp;&gt;&nbsp;0.5); grey = flat-to-negative. <b>Mean-reversion / stat-arb dominates; every momentum and ML signal loses money</b> — exactly what the autocorrelation and variance-ratio nulls predicted.</p>
+    <div class="panel" style="padding:18px 22px">
+      <div id="stratBars"></div>
+    </div>
+    <div class="grid2" style="margin-top:16px">
+      <div class="callout" style="margin:0">
+        <b>10 addable edges, ranked.</b> Kalman dynamic-hedge pairs (5.95) &gt; OU hysteresis bands (4.35) &gt; triplet baskets (4.03) &gt; static cointegration &gt; ALGO 5-day reversion (2.40) &gt; corr-vs-ALGO residual (1.64) &gt; lead-lag (1.26) &gt; weekly (5–10d) XS reversal &gt; Bollinger &gt; PC-residual. All mean-reversion — they diversify but share a driver. <b>Exit band matters most:</b> entering at 1σ and exiting at 0.5σ (not holding to 0) lifts the pair Sharpe from 0.6 → 4.35.
+      </div>
+      <div class="callout" style="margin:0;border-left-color:var(--good)">
+        <b>Combining pays off.</b> Score = mean·SR²/(SR²+1): once Sharpe is high the fraction saturates, so stacking complementary reversion edges lifts <i>PnL</i> at little Sharpe cost. The edges are near-uncorrelated (ALGO-timing &amp; lead-lag ≈ 0 with everything), so the first three stack <i>raises</i> Sharpe rather than diluting it.
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:18px">
+      <div class="card-h"><div class="t">Portfolio stack — the ceiling</div><div class="d">greedy add · combined score, last 250 days</div></div>
+      <div class="card-b">
+        <div id="stackBars"></div>
+        <div class="statline" style="border:1px solid var(--line);border-radius:10px;margin-top:16px">
+          <div class="stat"><div class="v good">286</div><div class="k">6-edge stack · SR 3.4</div></div>
+          <div class="stat"><div class="v good">320</div><div class="k">weight-tuned · SR 4.7</div></div>
+          <div class="stat"><div class="v good">420</div><div class="k">held-out OOS · SR 5.6</div></div>
+        </div>
+        <p class="sec-lede" style="margin:14px 0 0">Best single edge scores <b>117</b>; the full stack reaches <b>286</b> in-sample (weight-tuned <b>320</b>). On a strict split — weights fit on days 250–375, tested untouched on 375–500 — the book returns <b>score 420 / Sharpe 5.65</b>. Honest caveat: that held-out window is a favourable one (the tune window scored 196), and the six base pairs were chosen with full-sample cointegration, so treat 420 as an optimistic ceiling and ~150–250 as the durable expectation.</p>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:18px;border-color:color-mix(in srgb, var(--good) 45%, var(--line))">
+      <div class="card-h"><div class="t">✓ Recommended submission — the <b>robust</b> book, not the peak one</div><div class="d">rolling pair selection · no look-ahead · official eval.py</div></div>
+      <div class="card-b">
+        <p class="sec-lede" style="margin:0 0 14px">Sub-window testing (below) shows the full 6-edge stack is <b>fragile</b> — its 190 full-sample score is carried by one favourable window (317) and collapses to 58 in the other, while churning $56M in commissions. Dropping the two churny overlays (lead-lag, XS-reversal) gives a <b>lean pairs + ALGO-timing + factor-residual book</b> that scores consistently across every window at a third of the turnover. For a leaderboard graded on unseen data, this is the submission.</p>
+        <div class="scroll"><table>
+          <thead><tr><th>Variant</th><th class="num">Full 250d</th><th class="num">First 125d</th><th class="num">Last 125d</th><th class="num">$vol</th><th>Read</th></tr></thead>
+          <tbody>
+            <tr><td>Full 6-edge stack</td><td class="num">190</td><td class="num" style="color:var(--null)">58</td><td class="num">318</td><td class="num">$56M</td><td><span class="pill warn"><span class="dot warn"></span>fragile</span></td></tr>
+            <tr style="background:var(--good-bg)"><td class="tkr">Lean · pairs+ALGO+factor</td><td class="num">134</td><td class="num">152</td><td class="num">116</td><td class="num">$16M</td><td><span class="pill good"><span class="dot good"></span>robust ✓</span></td></tr>
+            <tr><td>Pairs + ALGO only</td><td class="num">119</td><td class="num">179</td><td class="num" style="color:var(--null)">58</td><td class="num">$12M</td><td><span class="pill warn"><span class="dot warn"></span>uneven</span></td></tr>
+            <tr><td>Equal weights (all 5)</td><td class="num">152</td><td class="num" style="color:var(--null)">−11</td><td class="num">366</td><td class="num">$52M</td><td><span class="pill null"><span class="dot null"></span>fragile</span></td></tr>
+          </tbody>
+        </table></div>
+        <div class="statline" style="border:1px solid var(--line);border-radius:10px;margin-top:16px">
+          <div class="stat"><div class="v good">133.9</div><div class="k">official eval.py score</div></div>
+          <div class="stat"><div class="v">2.66</div><div class="k">annualized Sharpe</div></div>
+          <div class="stat"><div class="v">$153</div><div class="k">mean daily PnL</div></div>
+          <div class="stat"><div class="v">13 s</div><div class="k">runtime · 250 days</div></div>
+        </div>
+        <p class="sec-lede" style="margin:14px 0 0">Ships in <code>analysis/final_strategy.py</code> — self-contained, numpy + <code>statsmodels.coint</code> only (both in the grading sandbox). Every component reads only past prices.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <b>Method.</b> 500×51 daily log-price panel (499 return obs/instrument). All p-values pooled and corrected with Benjamini-Hochberg FDR &amp; Bonferroni. Predictive models validated walk-forward vs shuffled-target baselines; pair strategies validated on a strict train/test split. Libraries: numpy 2.5, pandas 3.0, scipy, statsmodels 0.14, arch 8.0, scikit-learn 1.9, PyTorch 2.13, TensorFlow 2.21, PyWavelets 1.8.
+    <br><br><b>Honesty notes.</b> The 47 "significant trends" are the spurious-regression artifact on unit-root series (not predictive). Tree/attention directional p-values are inflated by cross-sectional correlation (effective N ≈ 500 days). PyTorch &amp; TensorFlow are used for research only — they are <i>not</i> in the grading sandbox. · Generated from <code>analysis/</code> · scripts 01–19 + per-library CSVs.
+  </footer>
+</div>
+
+<script>
+  // ---- family excess table ----
+  const fam = [
+    ["Correlation vs market","scipy",150,150,142.5,"good","common factor — every name loads on it"],
+    ["Correlation vs ALGO","scipy",150,150,142.5,"good","ALGO is that factor (corr 0.98)"],
+    ["Unit root","statsmodels",255,111,98.2,"warn","trivial: returns stationary, prices not"],
+    ["Distribution fit","scipy",459,86,63.0,"warn","rejections of bad fits — reverse polarity"],
+    ["Unit root","arch",306,69,53.7,"warn","same trivial fact, more tests"],
+    ["Linear trend","scipy",51,48,45.4,"warn","spurious regression on random walks"],
+    ["Cointegration","arch",14,14,13.3,"good","the real, tradeable edge"],
+    ["Granger causality","statsmodels",100,11,6.0,"warn","ALGO weakly leads a few names"],
+    ["Regime (1st vs 2nd half)","scipy",714,40,4.3,"null","noise floor — no regime shift"],
+    ["Cross-decomp (CCA)","sklearn",1,1,1.0,"warn","in-sample only; OOS ≈ 0"],
+    ["Specification / RESET","statsmodels",153,8,0.4,"null","noise floor — series is linear"],
+    ["Normality","statsmodels",51,2,-0.6,"null","returns are Gaussian"],
+    ["ARMA model ≠ white noise","statsmodels",51,1,-1.6,"null","returns are white noise"],
+    ["Structural break","statsmodels",51,0,-2.6,"null","no breaks"],
+    ["Heteroskedasticity","statsmodels",204,5,-5.2,"null","no volatility clustering"],
+    ["Sign / runs","scipy",204,5,-5.2,"null","return signs are random"],
+    ["Normality","scipy",357,12,-5.8,"null","returns are Gaussian"],
+    ["Autocorrelation","statsmodels",663,24,-9.2,"null","no serial correlation at any lag"],
+  ];
+  const maxEx = 145;
+  document.getElementById("famBody").innerHTML = fam.map(r=>{
+    const [name,lib,tests,raw,ex,cls,verdict]=r;
+    const w = Math.min(50, Math.abs(ex)/maxEx*50);
+    const bar = ex>=0
+      ? `<div class="fill pos" style="width:${w}%"></div>`
+      : `<div class="fill neg" style="width:${w}%"></div>`;
+    const exTxt = (ex>0?"+":"")+ex.toFixed(1);
+    return `<tr>
+      <td><span class="dot ${cls}"></span> ${name}</td>
+      <td class="mono" style="color:var(--ink-faint);font-size:12px">${lib}</td>
+      <td class="num">${tests}</td><td class="num">${raw}</td>
+      <td class="num" style="color:var(--${cls==='good'?'good':cls==='warn'?'warn':'null'})">${exTxt}</td>
+      <td><div class="exbar"><div class="mid"></div>${bar}</div></td>
+      <td style="color:var(--ink-soft);font-size:12.5px">${verdict}</td>
+    </tr>`;
+  }).join("");
+
+  // ---- pairs table ----
+  const pairs = [
+    ["AENO – NWIG","0.0000","1.072","3.9 d","0.000","−0.07","bonf"],
+    ["EORC – NGTE","0.0000","1.579","5.4 d","0.000","+0.93","bonf"],
+    ["HETT – ULXY","0.0000","0.658","5.5 d","0.000","−0.95","bonf"],
+    ["SMAH – ILVX","0.0000","1.396","5.8 d","0.000","+0.37","bonf"],
+    ["HUXZ – ACAC","0.0000","1.131","5.9 d","0.000","−0.19","bonf"],
+    ["CTGI – EELT","0.0001","0.751","6.6 d","0.000","−1.61 z","fdr"],
+  ];
+  document.getElementById("pairBody").innerHTML = pairs.map(p=>{
+    const badge = p[6]==="bonf"
+      ? `<span class="pill good"><span class="dot good"></span>Bonferroni</span>`
+      : `<span class="pill good"><span class="dot good"></span>BH-FDR</span>`;
+    return `<tr><td class="tkr">${p[0]}</td><td class="num">${p[1]}</td><td class="num">${p[2]}</td>
+      <td class="num">${p[3]}</td><td class="num">${p[4]}</td><td class="num">${p[5]}</td><td>${badge}</td></tr>`;
+  }).join("");
+
+  // ---- null-results grid ----
+  const nulls = [
+    ["Autocorrelation","1 / 51","significant lag-1 (Ljung-Box)","no momentum or mean-reversion"],
+    ["Stationary prices","0 / 51","reject unit root (ADF)","no single-name reversion"],
+    ["Volatility clustering","1 / 51","ARCH-LM significant","constant variance"],
+    ["Fat tails","3 / 51","reject normality","excess kurtosis ≈ −0.04"],
+    ["Structural breaks","0 / 51","CUSUM break","stable regime"],
+    ["Seasonality","0.06–0.10","STL seasonal strength","no weekly/monthly cycle"],
+  ];
+  document.getElementById("nullGrid").innerHTML = nulls.map(n=>`
+    <div class="panel"><div class="card-h"><div class="t">${n[0]}</div></div>
+      <div class="card-b" style="padding-top:6px">
+        <div class="mono" style="font-size:26px;font-weight:600;color:var(--null)">${n[1]}</div>
+        <div style="font-size:12.5px;color:var(--ink-faint);font-family:var(--mono)">${n[2]}</div>
+        <div style="font-size:13px;color:var(--ink-soft);margin-top:8px">${n[3]}</div>
+      </div></div>`).join("");
+
+  // ---- edge-menu bars ----
+  const strat = window.STRAT_DATA || [
+    ["Kalman dynamic pairs","pairs · stat-arb",5.95,"good"],
+    ["OU-band pairs · enter 1σ, exit 0.5σ","pairs · stat-arb",4.35,"good"],
+    ["Triplet basket (Johansen)","basket · stat-arb",4.03,"good"],
+    ["Cointegration pairs (official eval)","pairs · walk-fwd",3.96,"good"],
+    ["ALGO timing · revert 5d","factor",2.40,"good"],
+    ["Corr-vs-ALGO residual","factor · stat-arb",1.64,"good"],
+    ["Lead-lag cross-predict","lead-lag",1.26,"good"],
+    ["XS reversal · 10d","mean-rev",0.81,"good"],
+    ["Bollinger · 20d","mean-rev",0.75,"good"],
+    ["PC(5)-residual reversal","mean-rev",0.58,"good"],
+    ["XS reversal · 5d","mean-rev",0.53,"good"],
+    ["XS reversal · 3d","mean-rev",0.15,"warn"],
+    ["XS reversal · 1d","mean-rev",-0.29,"null"],
+    ["PC(3)-residual reversal","mean-rev",-0.34,"null"],
+    ["Starter (momentum)","reference",-0.38,"null"],
+    ["XS momentum · 5d","momentum",-0.95,"null"],
+    ["ALGO timing · momentum 20d","factor",-1.45,"null"],
+    ["TS momentum · 60d","momentum",-1.49,"null"],
+    ["XS momentum · 60d","momentum",-1.50,"null"],
+    ["XS momentum · 20d","momentum",-1.59,"null"],
+    ["GBM ML cross-section","ML",-1.66,"null"],
+    ["TS momentum · 120d","momentum",-2.04,"null"],
+  ];
+  const vals = strat.map(s=>s[2]).filter(v=>v!==null);
+  const lo = Math.min(-2.2, ...vals), hi = Math.max(6.2, ...vals), span = hi-lo;
+  const zeroPct = (0-lo)/span*100;
+  document.getElementById("stratBars").innerHTML =
+    `<div class="sbar-row" style="border-bottom:1px solid var(--line-strong)">
+       <div class="sbar-name mono" style="font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em">Strategy</div>
+       <div class="mono" style="font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em">Ann. Sharpe (last 250 days)</div>
+       <div class="sbar-val" style="font-size:11px;color:var(--ink-faint)">Sharpe</div></div>` +
+    strat.map(s=>{
+      const [name,fam,v,cls]=s;
+      if (v===null) return `<div class="sbar-row">
+        <div class="sbar-name">${name}<span class="fam">${fam}</span></div>
+        <div class="sbar-track"><div class="sbar-zero" style="left:${zeroPct}%"></div></div>
+        <div class="sbar-val" style="color:var(--ink-faint)">running…</div></div>`;
+      const col = cls==='good'?'var(--good)':cls==='warn'?'var(--warn)':'var(--null)';
+      let fill;
+      if (v>=0) fill = `left:${zeroPct}%;width:${v/span*100}%;background:${col}`;
+      else fill = `right:${100-zeroPct}%;width:${-v/span*100}%;background:${col}`;
+      return `<div class="sbar-row">
+        <div class="sbar-name">${name}<span class="fam">${fam}</span></div>
+        <div class="sbar-track"><div class="sbar-zero" style="left:${zeroPct}%"></div>
+          <div class="sbar-fill" style="${fill}"></div></div>
+        <div class="sbar-val" style="color:${col}">${v>0?'+':''}${v.toFixed(2)}</div></div>`;
+    }).join("");
+
+  // ---- portfolio stack bars ----
+  const stack = [
+    ["1 · Kalman pairs",117,"4.76"],
+    ["2 · + ALGO timing 5d",177,"5.19"],
+    ["3 · + Triplet basket",220,"5.60"],
+    ["4 · + Corr-vs-ALGO",254,"4.13"],
+    ["5 · + Lead-lag",276,"4.21"],
+    ["6 · + XS reversal 10d",286,"3.44"],
+  ];
+  const smax = 300;
+  document.getElementById("stackBars").innerHTML = stack.map((s,i)=>{
+    const w = s[1]/smax*100;
+    const col = i<3 ? "var(--good)" : "var(--accent)";
+    return `<div class="sbar-row" style="grid-template-columns:190px 1fr 96px">
+      <div class="sbar-name">${s[0]}</div>
+      <div class="sbar-track"><div class="sbar-fill" style="left:0;width:${w}%;background:${col}"></div></div>
+      <div class="sbar-val">${s[1]} <span style="color:var(--ink-faint);font-weight:400;font-size:11px">SR ${s[2]}</span></div>
+    </div>`;
+  }).join("");
+
+  // ---- theme toggle ----
+  const btn = document.getElementById("themeBtn");
+  btn.addEventListener("click", ()=>{
+    const cur = document.documentElement.getAttribute("data-theme");
+    const next = cur==="dark" ? "light" : cur==="light" ? "dark"
+      : (matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", next);
+  });
+</script>

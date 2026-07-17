@@ -1,0 +1,214 @@
+{
+  "in_sample_top": [
+    [
+      604.5511696360329,
+      {
+        "hl": 500,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "fade",
+        "contra": 1000000,
+        "hedge": false
+      }
+    ],
+    [
+      603.7010237249792,
+      {
+        "hl": 500,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "fade",
+        "contra": 1000000,
+        "hedge": true
+      }
+    ],
+    [
+      599.593252492601,
+      {
+        "hl": 2000,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "fade",
+        "contra": 1000000,
+        "hedge": true
+      }
+    ],
+    [
+      597.2766958524263,
+      {
+        "hl": 2000,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "fade",
+        "contra": 1000000,
+        "hedge": false
+      }
+    ],
+    [
+      593.6874504572316,
+      {
+        "hl": 2000,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "fade",
+        "contra": 200000,
+        "hedge": true
+      }
+    ],
+    [
+      592.9440310345348,
+      {
+        "hl": 500,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "fade",
+        "contra": 200000,
+        "hedge": false
+      }
+    ],
+    [
+      591.3393356911043,
+      {
+        "hl": 1000,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "fade",
+        "contra": 1000000,
+        "hedge": false
+      }
+    ],
+    [
+      590.9160228629455,
+      {
+        "hl": 500,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "fade",
+        "contra": 500000,
+        "hedge": false
+      }
+    ],
+    [
+      590.841728822299,
+      {
+        "hl": 1000,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "fade",
+        "contra": 1000000,
+        "hedge": true
+      }
+    ],
+    [
+      589.4074659636553,
+      {
+        "hl": 500,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "fade",
+        "contra": 200000,
+        "hedge": true
+      }
+    ],
+    [
+      585.695520360467,
+      {
+        "hl": 2000,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "fade",
+        "contra": 200000,
+        "hedge": false
+      }
+    ],
+    [
+      585.36825651757,
+      {
+        "hl": 2000,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "ols",
+        "contra": 1000000,
+        "hedge": true
+      }
+    ],
+    [
+      585.3196844902009,
+      {
+        "hl": 2000,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "ols",
+        "contra": 500000,
+        "hedge": true
+      }
+    ],
+    [
+      585.3026750770537,
+      {
+        "hl": 2000,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "ols",
+        "contra": 200000,
+        "hedge": true
+      }
+    ],
+    [
+      585.3005590061133,
+      {
+        "hl": 2000,
+        "conv": 0.0,
+        "sizing": "sign",
+        "blend": 0.3,
+        "revw": 10,
+        "mode": "off",
+        "contra": 0,
+        "hedge": true
+      }
+    ]
+  ],
+  "oos_forward": {
+    "train_best": 1053.7774045092401,
+    "forward_500_750": 515.3300934087176,
+    "cfg": {
+      "hl": 1000,
+      "conv": 0.0,
+      "sizing": "sign",
+      "blend": 0.15,
+      "mode": "fade",
+      "contra": 1000000,
+      "hedge": false
+    }
+  },
+  "max_in_sample": 604.5511696360329,
+  "n_configs": 5760
+}

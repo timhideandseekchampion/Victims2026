@@ -1,0 +1,32 @@
+
+==============================================================================
+STRATEGIES FROM TEST FAMILIES - scored on last 250 days (eval.py logic)
+==============================================================================
+strategy                    family              mean$  Sharpe    Score        $vol
+starter                     momentum(ref)      -30.52   -0.38   -30.52     6548798
+S1 corr-vs-ALGO             correlation         32.68    0.56     7.86    17701235
+S2 unit-root gated          unit-root            9.72    0.55     2.23     6955084
+S3 dist-fit reversion       dist-fit            -0.96   -0.03    -0.96    34261614
+coint-pairs                 cointegration(ref)   121.13    5.09   116.62     5369837
+S4 ensemble                 all                155.65    2.22   129.42    49821245
+
+==============================================================================
+QUICK SWEEPS (S1 entry_z, S3 entry_z)
+==============================================================================
+S1 correlation-vs-ALGO (lookback x entry_z):
+   lb    ez  Sharpe   Score
+   40  0.75    0.14    0.17
+   40  1.00    0.01    0.00
+   40  1.50    0.60    7.84
+   60  0.75    0.35    2.42
+   60  1.00    0.56    7.86
+   60  1.50    1.05   24.31
+   90  0.75    1.74   79.20
+   90  1.00    1.59   63.46
+   90  1.50    0.83   15.92
+
+S3 dist-fit gauss (entry_z):
+    ez  Sharpe   Score
+   1.0   -0.64  -21.54
+   1.5   -0.03   -0.96
+   2.0   -0.01   -0.30

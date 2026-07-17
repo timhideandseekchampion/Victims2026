@@ -1,0 +1,58 @@
+
+==============================================================================
+6A. ARCH-LM TEST + GARCH(1,1) - volatility clustering
+==============================================================================
+Engle ARCH-LM H0: no ARCH (homoskedastic). Reject => volatility clusters.
+
+Instruments with significant ARCH effects (LM p<0.05): 1/51
+
+GARCH(1,1) fits (persist=alpha+beta; ~1 => strong vol memory):
+ tkr  ARCH_LM_p  alpha   beta  persist
+ALGO     0.9347 0.0000 0.9913   0.9913
+AENO     0.2395 0.0000 0.4288   0.4288
+LSST     0.3402 0.0537 0.2742   0.3278
+SRNA     0.8134 0.0000 0.9751   0.9751
+ELLT     0.3093 0.0165 0.9117   0.9282
+AMRP     0.9990 0.0124 0.4105   0.4228
+OTCS     0.8422 0.0000 0.9339   0.9339
+HETT     0.0566 0.0596 0.6569   0.7165
+ACAC     0.0050 0.1329 0.2931   0.4261
+
+=> Little/no volatility clustering (1/51). Squared-return ACF check:
+   mean lag-1 ACF of squared returns: -0.0060 (22/51 positive)
+
+==============================================================================
+6B. GRANGER CAUSALITY - does ALGO (market) lead other names?
+==============================================================================
+H0: ALGO returns do NOT Granger-cause name's returns (lag up to 3).
+
+Names Granger-caused by ALGO (p<0.05): 9/50 (expected under null ~2)
+Strongest: CUBO(0.001), HRND(0.001), ULXY(0.002), GARI(0.007), HRET(0.010), MHRM(0.021), LSST(0.022), ANSO(0.040), ELLT(0.047)
+
+==============================================================================
+6C. HURST EXPONENT - trending vs mean-reverting
+==============================================================================
+H<0.5 mean-reverting, =0.5 random walk, >0.5 trending/persistent.
+
+Hurst on PRICES: mean 0.476 (min 0.355, max 0.654)
+Hurst on RETURNS: mean 0.001
+  prices with H<0.45 (mean-reverting): 16/51
+  prices with H>0.55 (trending):       4/51
+
+==============================================================================
+6D. STRUCTURAL BREAKS - CUSUM test on cumulative returns
+==============================================================================
+Instruments with CUSUM structural break in mean (p<0.05): 0/51
+
+==============================================================================
+6E. RUNS TEST + SEASONALITY
+==============================================================================
+Runs test on market return signs: z=-0.36 p=0.720  (consistent with randomness)
+5-day-cycle mean returns: ['-8.2bp', '2.3bp', '-0.6bp', '-2.5bp', '-13.8bp']
+ANOVA across cycle positions: F=0.43 p=0.789 
+
+==============================================================================
+6F. VERDICT
+==============================================================================
+ARCH/vol-clustering: 1/51 | Granger by ALGO: 9/50 | CUSUM breaks: 0/51
+Mean Hurst(prices): 0.476 (mildly mean-reverting)

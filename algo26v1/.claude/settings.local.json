@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/bin/python harness_adaptive.py)",
+      "Bash(.venv/bin/python __TRACKED_VAR__/eval_adaptive.py)",
+      "Bash(PYTHONPATH=/home/SIG2026/algo26v1 .venv/bin/python __TRACKED_VAR__/eval_adaptive.py)",
+      "Bash(.venv/bin/python /tmp/claude-0/-home-SIG2026-algo26v1/87fe8578-966b-4adf-a05d-6e8b5d005247/scratchpad/record_trades.py)",
+      "Bash(.venv/bin/python -)"
+    ]
+  }
+}

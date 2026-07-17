@@ -1,0 +1,115 @@
+
+==============================================================================
+4A. PCA ON STANDARDISED RETURNS (factor structure)
+==============================================================================
+Variance explained by top components:
+  PC1: 22.65%   cumulative: 22.65%
+  PC2:  5.56%   cumulative: 28.22%
+  PC3:  3.85%   cumulative: 32.07%
+  PC4:  2.50%   cumulative: 34.57%
+  PC5:  2.40%   cumulative: 36.97%
+  PC6:  2.36%   cumulative: 39.33%
+  PC7:  2.29%   cumulative: 41.62%
+  PC8:  2.22%   cumulative: 43.84%
+
+PC1 explains 22.7% -> moderate common (market) factor
+corr(PC1 score, ALGO return) = +0.975  => ALGO IS essentially the market factor
+
+PC1 loadings: all same sign? YES (level factor)
+  ALGO loading: +0.287 (rank 1/51)
+
+==============================================================================
+4B. FACTOR ANALYSIS (sklearn) - how many latent factors
+==============================================================================
+  1 factors: avg log-likelihood/sample = -66.6927
+  2 factors: avg log-likelihood/sample = -65.8589
+  3 factors: avg log-likelihood/sample = -65.4578
+  5 factors: avg log-likelihood/sample = -65.3031
+
+==============================================================================
+4C. CLUSTERING INSTRUMENTS (KMeans & hierarchical on corr distance)
+==============================================================================
+  KMeans cluster 0: AENO LSST SRNA AMRP OTCS HETT HUXZ DUCT SMAH NPCK EORC CUBO HRET ANSO NWIG ACAC SRTX MTNS IHOZ ULXY BENI HTRK NGTE ILVX
+  KMeans cluster 1: ELLT SPLZ MDGI AGVF ALUT ACIX HRND ITPA EAFC
+  KMeans cluster 2: RTTH MMBT RRES CTGI RCRI NAYO EELT
+  KMeans cluster 3: ALGO
+  KMeans cluster 4: MSDP DIHO GARI CCNS FWWG AETS BLBT FCSG FARS MHRM
+
+==============================================================================
+4D. *** KEY TEST: RESIDUAL MEAN-REVERSION (market-neutral signal) ***
+==============================================================================
+Regress each name on the equal-weight market return; test residual AC1.
+
+ tkr  beta_mkt  resid_AC1  LB1_p sig
+ALGO    1.0058     0.0834 0.0618   .
+AENO    0.9406     0.0259 0.5619    
+LSST    0.9641    -0.0507 0.2572    
+SRNA    0.8410     0.0552 0.2165    
+ELLT    0.7877    -0.0272 0.5422    
+AMRP    1.2096     0.0145 0.7458    
+OTCS    0.9286     0.0007 0.9877    
+HETT    0.6928     0.0608 0.1730    
+HUXZ    1.0364    -0.0838 0.0619   .
+DUCT    1.1421    -0.0864 0.0529   .
+SMAH    0.9826    -0.0077 0.8624    
+NPCK    0.8426     0.0847 0.0582   .
+MSDP    1.1350     0.0209 0.6417    
+EORC    0.9695    -0.0244 0.5849    
+CUBO    0.8731    -0.0277 0.5353    
+HRET    0.8577    -0.0622 0.1664    
+ANSO    0.8377    -0.1227 0.0060  **
+DIHO    0.9321    -0.0003 0.9950    
+RTTH    1.1916     0.0399 0.3719    
+SPLZ    1.2565    -0.0352 0.4300    
+NWIG    0.8575    -0.0388 0.3855    
+MMBT    1.4454    -0.0055 0.9011    
+MDGI    0.9007    -0.0027 0.9518    
+AGVF    0.8930    -0.0609 0.1721    
+RRES    1.1156     0.0607 0.1753    
+CTGI    1.2544     0.0400 0.3710    
+ALUT    0.7502     0.0846 0.0585   .
+ACAC    0.9695    -0.0263 0.5562    
+SRTX    1.0120     0.0420 0.3476    
+GARI    1.2059    -0.0292 0.5136    
+RCRI    1.6081     0.0651 0.1453    
+ACIX    0.8410     0.0275 0.5375    
+CCNS    0.7720    -0.0051 0.9092    
+MTNS    0.9671    -0.0258 0.5644    
+IHOZ    0.9531     0.0110 0.8050    
+NAYO    1.3665    -0.0025 0.9551    
+FWWG    0.7949     0.0217 0.6277    
+EELT    1.4706     0.0333 0.4562    
+HRND    1.0025    -0.0369 0.4095    
+AETS    1.4462    -0.0186 0.6782    
+ULXY    1.2416    -0.0143 0.7489    
+BLBT    0.6634    -0.0180 0.6874    
+BENI    0.6224     0.0409 0.3591    
+ITPA    0.7725     0.0350 0.4339    
+HTRK    0.8953    -0.0913 0.0410   *
+NGTE    1.1037    -0.0785 0.0799   .
+ILVX    0.8473     0.0334 0.4548    
+FCSG    1.0734     0.0366 0.4127    
+FARS    0.5340    -0.0395 0.3777    
+MHRM    1.0282    -0.0756 0.0905   .
+EAFC    1.1650    -0.0137 0.7586    
+
+Residual AC1: mean -0.0038
+  negative (mean-reverting) in 29/51 names; significant (LB p<.05) in 2/51
+
+==============================================================================
+4E. CROSS-SECTIONAL REVERSAL PORTFOLIO TEST
+==============================================================================
+Market-neutral 1-day residual-reversal strategy (in return space):
+  mean daily pnl: 7.536999e-05
+  annualised Sharpe: 0.252
+  t-stat vs 0: 0.36 (p=0.7223) 
+  hit rate (days pnl>0): 49.6%
+
+Total-return cross-sectional reversal: Sharpe 0.102, t=0.14 (p=0.8857) 
+
+==============================================================================
+4F. VERDICT
+==============================================================================
+PC1 variance: 22.7%; corr(PC1,ALGO)=+0.98
+Residual reversal Sharpe 0.25 (t=0.4); total-ret reversal Sharpe 0.10 (t=0.1)
+If reversal Sharpe is high & t-stat strong, THIS is the exploitable edge.

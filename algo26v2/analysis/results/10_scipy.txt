@@ -1,0 +1,48 @@
+
+==============================================================================
+10A. NORMALITY / DISTRIBUTION GOODNESS-OF-FIT (per instrument)
+==============================================================================
+
+==============================================================================
+10B. DISTRIBUTION FITTING - which family fits returns best (KS)
+==============================================================================
+Best-fitting distribution family across 51 instruments (highest KS p):
+  gennorm: 24
+  johnsonsu: 8
+  genhyperbolic: 7
+  skewnorm: 6
+  t: 5
+  logistic: 1
+
+==============================================================================
+10C. TREND ESTIMATORS ON PRICES (is there a deterministic trend?)
+==============================================================================
+Significant OLS linear trend (p<0.05): 48/51
+Theil-Sen slope CI excludes 0:          45/51
+
+==============================================================================
+10D. CORRELATION vs ALGO and vs MARKET (3 coefficients each)
+==============================================================================
+
+==============================================================================
+10E. REGIME: FIRST-HALF vs SECOND-HALF RETURNS (12 two-sample tests)
+==============================================================================
+Significant (p<0.05) counts by test (mean/dist/scale shift 1st vs 2nd half):
+  cramervonmises_2s: 5/51
+  mannwhitneyu: 4/51
+  ranksums: 4/51
+  kruskal: 4/51
+  brunnermunzel: 4/51
+  ks_2samp: 4/51
+  ttest_ind: 3/51
+  welch_t: 3/51
+  epps_singleton: 3/51
+  mood_scale: 3/51
+  ansari_scale: 3/51
+
+==============================================================================
+10F. SIGN / RANDOMNESS / CONTINGENCY
+==============================================================================
+ANOVA across 51 instruments: F=0.66 p=0.971 
+
+[scipy_full] recorded 2242 tests; 2089 with p-values; 492 raw-significant (p<0.05). -> /home/SIG2026/algo26v2/analysis/results/scipy_full.csv

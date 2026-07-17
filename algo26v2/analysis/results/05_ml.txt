@@ -1,0 +1,39 @@
+
+==============================================================================
+5A. POOLED PANEL: 25143 samples x 7 features
+==============================================================================
+Features: own returns lag1-5, market return lag1, recent 5d vol.
+Target: next-day own log return. Metric: OOS R^2 (walk-forward 5 folds).
+
+model                 OOS_R2   dir_acc  shuffled_R2
+Ridge               -0.00092    0.5092     -0.00060
+Lasso               -0.00015    0.5171     -0.00022
+ElasticNet          -0.00015    0.5171     -0.00040
+RandomForest         0.00359    0.5178     -0.00230
+GradientBoosting     0.00420    0.5233     -0.00291
+
+(OOS R^2 <= 0 means the model does no better than predicting the mean.)
+
+==============================================================================
+5B. PyTorch MLP (nonlinear, walk-forward)
+==============================================================================
+  MLP OOS R^2: -0.22210   directional acc: 0.5039
+
+==============================================================================
+5C. TensorFlow/Keras LSTM (sequence model on ALGO)
+==============================================================================
+  LSTM(ALGO) OOS R^2: -0.00838   directional acc: 0.5102
+
+==============================================================================
+5D. DIRECTIONAL-ACCURACY SIGNIFICANCE (binomial test)
+==============================================================================
+Best model (GradientBoosting) directional acc 0.5233 on 20950 OOS samples
+Binomial test vs 50%: p=1.613e-11 ***
+
+==============================================================================
+5E. VERDICT
+==============================================================================
+All OOS R^2: Ridge=-0.0009, Lasso=-0.0002, ElasticNet=-0.0002, RandomForest=0.0036, GradientBoosting=0.0042
+If every OOS R^2 <= ~0 and directional acc ~50% (n.s.), returns are
+effectively UNPREDICTABLE from their own/market history -> no ML edge;
+the only real structure is the cointegrated-pair spreads (module 3).

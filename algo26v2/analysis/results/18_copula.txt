@@ -1,0 +1,44 @@
+
+==============================================================================
+18A. EMPIRICAL TAIL DEPENDENCE - all 1275 pairs (lower vs upper)
+==============================================================================
+Across 1275 pairs: mean lower-tail dep 0.168, upper 0.163
+Mean asymmetry (lower-upper): +0.005 (symmetric - no crash bias)
+t-test asymmetry vs 0: t=2.50 p=0.0127
+
+Highest lower-tail dependence pairs:
+   a    b  kendall_tau  lower_TD  upper_TD  asymmetry
+ALGO SRNA        0.347     0.421     0.321       0.10
+IHOZ ILVX        0.295     0.421     0.220       0.20
+ALGO SRTX        0.318     0.361     0.361      -0.00
+GARI MHRM        0.188     0.361     0.240       0.12
+NAYO EELT        0.244     0.361     0.281       0.08
+ALGO MTNS        0.310     0.361     0.220       0.14
+ALGO NPCK        0.288     0.361     0.240       0.12
+ALGO ITPA        0.348     0.361     0.220       0.14
+
+==============================================================================
+18B. COPULA-FAMILY AIC SELECTION (cointegrated + top-corr pairs)
+==============================================================================
+pair        best_copula     tau  AIC by family
+AENO-NWIG   Gaussian      0.177  Gaussian=-34 Frank=-34 Clayton=-26 Gumbel=-24 StudentT=-21
+EORC-NGTE   Frank         0.167  Frank=-29 Gaussian=-25 Clayton=-17 Gumbel=-11 StudentT=-5
+HETT-ULXY   Frank         0.104  Frank=-10 Gaussian=-9 Gumbel=-4 Clayton=-2 StudentT=16
+SMAH-ILVX   Gaussian      0.187  Gaussian=-42 Gumbel=-38 Frank=-38 StudentT=-23 Clayton=-12
+HUXZ-ACAC   Frank         0.169  Frank=-31 Gaussian=-29 Gumbel=-16 Clayton=-14 StudentT=-2
+CTGI-EELT   Gumbel        0.160  Gumbel=-33 Gaussian=-29 Frank=-27 StudentT=-15 Clayton=-5
+ALGO-ILVX   Gaussian      0.407  Gaussian=-208 Gumbel=-207 Frank=-197 StudentT=-196 Clayton=-81
+ALGO-BLBT   Frank         0.368  Frank=-161 Gaussian=-158 StudentT=-144 Gumbel=-133 Clayton=-94
+ALGO-DUCT   Gaussian      0.365  Gaussian=-157 Frank=-157 StudentT=-146 Gumbel=-144 Clayton=-82
+ALGO-BENI   Gaussian      0.362  Gaussian=-159 Frank=-154 StudentT=-143 Gumbel=-132 Clayton=-105
+
+Best-fitting copula family counts: {'Gaussian': 5, 'Frank': 4, 'Gumbel': 1}
+
+==============================================================================
+18C. VERDICT
+==============================================================================
+Mean tail asymmetry +0.005 (t=2.50): significant crash co-movement
+Best copula family indicates the dependence type; Gaussian/Frank winning
+=> symmetric, no special tail clustering (consistent with Gaussian returns).
+
+[copula_dependence] recorded 13 tests; 1 with p-values; 1 raw-significant (p<0.05). -> /home/SIG2026/algo26v2/analysis/results/copula_dependence.csv

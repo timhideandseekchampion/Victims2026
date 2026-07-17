@@ -1,0 +1,72 @@
+
+==============================================================================
+17A. POWER SPECTRAL DENSITY - is there any dominant cycle?
+==============================================================================
+Peak frequency of Welch PSD per instrument (period in days = 1/freq).
+A truly white series has a flat PSD (no meaningful peak).
+
+Peak-period distribution across 51: median 4.3d, spread 3.0-8.0d
+Mean spectral flatness: 0.913 (near 1.0 => white noise, no exploitable cycle)
+=> Peak periods are scattered with no common cycle -> no periodicity.
+
+==============================================================================
+17B. SPECTRAL SLOPE (colour of noise): log-PSD vs log-freq
+==============================================================================
+slope ~0 white (memoryless), <0 red/persistent, >0 blue/anti-persistent.
+
+Mean spectral slope: +0.015 (std 0.089)
+  slopes within +/-0.15 of 0 (white): 46/51
+=> Returns are spectrally white -> consistent with the autocorrelation nulls.
+
+==============================================================================
+17C. MAGNITUDE-SQUARED COHERENCE: ALGO vs each name (freq-domain link)
+==============================================================================
+Mean coherence over all frequencies (0=unrelated, 1=linearly related).
+
+Highest mean coherence with ALGO:
+  ILVX: 0.445
+  DUCT: 0.408
+  CUBO: 0.404
+  EAFC: 0.384
+  MTNS: 0.382
+  GARI: 0.380
+  NGTE: 0.376
+  FWWG: 0.373
+  BENI: 0.371
+  BLBT: 0.369
+Average coherence with ALGO across names: 0.325
+
+==============================================================================
+17D. WAVELET ENERGY BY SCALE (DWT, db4) - where does variance live?
+==============================================================================
+Fraction of return variance at each dyadic scale (level 1=2d ... level 6=64d).
+
+  approx(>64d)  :   9.9%
+  ~64d          :   1.8%
+  ~32d          :   5.2%
+  ~16d          :   5.9%
+  ~8d           :  11.4%
+  ~4d           :  22.9%
+  ~2d           :  43.0%
+=> Roughly geometric fall-off (most energy at the finest scale) is the
+   signature of white noise; a spike at one scale would flag a cycle.
+
+==============================================================================
+17E. WAVELET COHERENCE (CWT) for the 6 cointegrated pairs
+==============================================================================
+  AENO-NWIG: time-varying wavelet-power corr = +0.485
+  EORC-NGTE: time-varying wavelet-power corr = +0.449
+  HETT-ULXY: time-varying wavelet-power corr = +0.213
+  SMAH-ILVX: time-varying wavelet-power corr = +0.509
+  HUXZ-ACAC: time-varying wavelet-power corr = +0.092
+  CTGI-EELT: time-varying wavelet-power corr = -0.048
+
+==============================================================================
+17F. VERDICT
+==============================================================================
+Frequency & time-frequency domains agree with the time-domain result:
+returns are spectrally WHITE (no cycles, flat PSD, slope~0, geometric
+wavelet energy). The only cross-instrument link visible in the spectrum
+is broadband coherence with the ALGO factor - not a tradeable frequency.
+
+[spectral_wavelet] recorded 216 tests; 0 with p-values; 0 raw-significant (p<0.05). -> /home/SIG2026/algo26v2/analysis/results/spectral_wavelet.csv

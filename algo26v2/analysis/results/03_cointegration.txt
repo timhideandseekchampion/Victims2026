@@ -1,0 +1,84 @@
+
+==============================================================================
+3A. RETURN CORRELATION STRUCTURE
+==============================================================================
+Off-diagonal return correlations: mean=+0.1996 std=0.0913 min=-0.001 max=+0.590
+|corr|>0.3: 160 pairs;  >0.5: 8 pairs
+
+Top 15 |return correlation| pairs:
+  ALGO-ILVX: +0.590
+  ALGO-BENI: +0.526
+  ALGO-CUBO: +0.523
+  ALGO-BLBT: +0.522
+  ALGO-DUCT: +0.522
+  ALGO-GARI: +0.519
+  ALGO-SRNA: +0.512
+  ALGO-FWWG: +0.500
+  ALGO-ACIX: +0.493
+  ALGO-ITPA: +0.490
+  ALGO-HTRK: +0.485
+  ALGO-SRTX: +0.485
+  ALGO-IHOZ: +0.484
+  ALGO-MSDP: +0.480
+  ALGO-NGTE: +0.478
+
+==============================================================================
+3B. ENGLE-GRANGER COINTEGRATION - ALL 1275 PAIRS
+==============================================================================
+H0: no cointegration. p<0.05 => prices share a stationary linear combo (spread).
+With 1275 tests at 5%, ~64 false positives expected. We look for EXCESS + low p.
+
+Pairs tested: 1275
+Cointegrated p<0.05: 92 (expected under null ~64)
+Cointegrated p<0.01: 24 (expected under null ~13)
+Cointegrated p<0.001: 7 (expected ~1.3)
+
+Strongest cointegrated pairs (lowest p) with hedge ratio & half-life:
+   a    b  coint_p  hedge_beta  half_life_d  spread_adf_p   z_now
+AENO NWIG   0.0000      0.9048       3.9018        0.0000 -0.1809
+EORC NGTE   0.0000      0.5975       5.4915        0.0000 -1.3759
+SMAH ILVX   0.0000      1.3960       5.7708        0.0000  0.3691
+HUXZ ACAC   0.0000      1.1308       5.9176        0.0000 -0.1887
+HETT ULXY   0.0002      0.9423       7.3072        0.0000 -0.2023
+CTGI EELT   0.0002      0.9392       7.4319        0.0000  1.3857
+ACIX ITPA   0.0006      0.8240       8.2997        0.0001 -0.2907
+RTTH NAYO   0.0018      0.9171      10.8062        0.0003  0.1862
+DUCT NWIG   0.0030      0.1526       9.9407        0.0005 -0.3211
+FWWG BLBT   0.0031      0.6622       9.9008        0.0006 -0.6433
+FWWG EAFC   0.0043      0.4835      10.4314        0.0008  0.6149
+MTNS BENI   0.0050      0.5899      10.5151        0.0009 -0.5200
+CUBO EAFC   0.0051     -2.7140      11.1415        0.0010 -0.5561
+CUBO NWIG   0.0054     -0.7430      10.5392        0.0010  0.9477
+BLBT EAFC   0.0055      0.7000      10.4388        0.0011  1.2370
+MTNS NAYO   0.0060      0.1573      13.2209        0.0012  0.2252
+NAYO EAFC   0.0060      0.2913      10.9468        0.0012 -0.8624
+NAYO BLBT   0.0074      0.3990      11.1095        0.0015 -1.2022
+AENO CUBO   0.0075     -1.0156      11.2649        0.0015  0.2460
+BENI FCSG   0.0082     -0.2100      15.5373        0.0017  0.3280
+SRTX MHRM   0.0092     10.9572      12.3197        0.0019 -0.8419
+RTTH ALUT   0.0092      1.6403      11.6583        0.0019  0.1163
+NAYO FWWG   0.0092      0.5511      11.4357        0.0019 -1.1366
+CUBO FWWG   0.0098     -4.8959      11.7023        0.0020  0.3743
+NAYO MHRM   0.0106      0.5758      11.8806        0.0022 -0.8725
+
+Pairs with stationary spread AND half-life 1-60d (tradeable stat-arb): 25
+
+==============================================================================
+3C. JOHANSEN TEST on the most-cointegrated basket
+==============================================================================
+Basket: ['RTTH', 'NAYO', 'CUBO', 'MHRM', 'BENI', 'FWWG']
+Trace stat vs 95% crit (rank r cointegrating relations):
+  r<=0: trace=96.08 crit95=95.75 REJECT->more relations
+  r<=1: trace=68.07 crit95=69.82 stop
+  r<=2: trace=41.35 crit95=47.85 stop
+  r<=3: trace=22.32 crit95=29.80 stop
+  r<=4: trace=9.10 crit95=15.49 stop
+  r<=5: trace=0.01 crit95=3.84 stop
+
+==============================================================================
+3D. VERDICT
+==============================================================================
+Return corr: mean +0.200 (near 0 => weak common factor)
+Cointegration p<0.01: 24 vs ~13 expected under null => near noise floor
+Tradeable stat-arb pairs (stationary + sane half-life): 25
+Saved candidate pairs -> results/tradeable_pairs.csv

@@ -1,0 +1,35 @@
+
+==============================================================================
+12A. UNIT-ROOT SUITE (6 tests x 51 instruments, on prices)
+==============================================================================
+Rejections at 5% (prices unless noted):
+  ADF: 4/51
+  DFGLS: 2/51
+  PP: 6/51
+  KPSS_nonstat: 49/51
+  ZA: 3/51
+  VR_rejectRW: 5/51
+
+==============================================================================
+12B. COINTEGRATION (Engle-Granger & Phillips-Ouliaris) - strong pairs
+==============================================================================
+  AENO-NWIG: EG p=0.0000  PO p=0.0000
+  EORC-NGTE: EG p=0.0000  PO p=0.0000
+  SMAH-ILVX: EG p=0.0000  PO p=0.0000
+  HUXZ-ACAC: EG p=0.0000  PO p=0.0000
+  HETT-ULXY: EG p=0.0002  PO p=0.0002
+  CTGI-EELT: EG p=0.0002  PO p=0.0002
+  ACIX-ITPA: EG p=0.0007  PO p=0.0010
+
+==============================================================================
+12C. GARCH FAMILY - AIC comparison + ARCH significance (all 51)
+==============================================================================
+Instruments where a GARCH model beats constant-vol by >2 AIC: 17/51
+AIC-winning vol model counts: {'EGARCH': 38, 'GARCH': 11, 'GJR': 1, 'APARCH': 1}
+
+==============================================================================
+12D. STATIONARY BOOTSTRAP - is mean daily return distinguishable from 0?
+==============================================================================
+Instruments with bootstrap mean-return CI excluding 0: 3/51
+
+[arch_full] recorded 626 tests; 320 with p-values; 83 raw-significant (p<0.05). -> /home/SIG2026/algo26v2/analysis/results/arch_full.csv
