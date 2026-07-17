@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Algothon 2026 — Research Workbench</title>
+<style>
+  :root {
+    --plane:        #f9f9f7;
+    --surface:      #fcfcfb;
+    --ink:          #0b0b0b;
+    --ink-2:        #52514e;
+    --muted:        #898781;
+    --grid:         #e1e0d9;
+    --axis:         #c3c2b7;
+    --border:       rgba(11,11,11,0.10);
+    --price:        #2a78d6;
+    --ma-fast:      #eb6834;
+    --ma-slow:      #4a3aa7;
+    --band:         #2a78d6;
+    --vol:          #1baf7a;
+    --buy:          #0ca30c;
+    --sell:         #d03b3b;
+    --calm:         rgba(42,120,214,0.10);
+    --turbulent:    rgba(235,104,52,0.13);
+    --up:           rgba(12,163,12,0.09);
+    --down:         rgba(208,59,59,0.09);
+  }
+  :root[data-theme="dark"], html[data-theme="dark"] {
+    --plane:        #0d0d0d;
+    --surface:      #1a1a19;
+    --ink:          #ffffff;
+    --ink-2:        #c3c2b7;
+    --muted:        #898781;
+    --grid:         #2c2c2a;
+    --axis:         #383835;
+    --border:       rgba(255,255,255,0.10);
+    --price:        #3987e5;
+    --ma-fast:      #d95926;
+    --ma-slow:      #9085e9;
+    --band:         #3987e5;
+    --vol:          #199e70;
+    --buy:          #0ca30c;
+    --sell:         #e66767;
+    --calm:         rgba(57,135,229,0.12);
+    --turbulent:    rgba(217,89,38,0.16);
+    --up:           rgba(12,163,12,0.12);
+    --down:         rgba(230,103,103,0.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --plane:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink-2:#c3c2b7;
+      --muted:#898781; --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+      --price:#3987e5; --ma-fast:#d95926; --ma-slow:#9085e9; --band:#3987e5; --vol:#199e70;
+      --buy:#0ca30c; --sell:#e66767;
+      --calm:rgba(57,135,229,0.12); --turbulent:rgba(217,89,38,0.16);
+      --up:rgba(12,163,12,0.12); --down:rgba(230,103,103,0.12);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--plane); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px;
+  }
+  header {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  header .spacer { flex: 1; }
+  .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 3px; }
+  .tab { border: none; background: transparent; color: var(--ink-2); border-radius: 7px; padding: 6px 12px; cursor: pointer; font: inherit; }
+  .tab.active { background: var(--price); color: #fff; }
+  .layout { display: flex; align-items: flex-start; gap: 16px; padding: 14px 18px; }
+  .controls {
+    width: 260px; flex: none; display: flex; flex-direction: column; gap: 14px;
+    position: sticky; top: 14px;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 13px;
+  }
+  .card h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); margin: 0 0 10px; font-weight: 600;
+  }
+  .field { margin-bottom: 10px; }
+  .field:last-child { margin-bottom: 0; }
+  label { display: block; color: var(--ink-2); margin-bottom: 4px; font-size: 12px; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .row .val { color: var(--muted); font-variant-numeric: tabular-nums; }
+  select, input[type="text"], input[type="number"] {
+    width: 100%; background: var(--plane); color: var(--ink);
+    border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px; font: inherit;
+  }
+  input[type="range"] { width: 100%; accent-color: var(--price); }
+  input.num { width: 66px; padding: 2px 6px; text-align: right; font-variant-numeric: tabular-nums;
+    background: var(--plane); color: var(--ink); border: 1px solid var(--border); border-radius: 6px; font: inherit; }
+  input.num::-webkit-inner-spin-button { opacity: 1; }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn {
+    background: var(--plane); color: var(--ink-2); border: 1px solid var(--border);
+    border-radius: 7px; padding: 5px 9px; cursor: pointer; font: inherit;
+  }
+  .btn:hover { border-color: var(--axis); }
+  .btn.active { background: var(--price); color: #fff; border-color: var(--price); }
+  .toggle { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; cursor: pointer; }
+  .toggle input { accent-color: var(--price); }
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+  .hidden { display: none !important; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 10px; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .tile .k { color: var(--muted); font-size: 11px; margin-bottom: 3px; }
+  .tile .v { font-size: 20px; font-weight: 600; }
+  .tile .v small { font-size: 12px; color: var(--ink-2); font-weight: 400; }
+  .tile.hero .v { font-size: 26px; }
+  .pos { color: var(--buy); } .neg { color: var(--sell); }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; color: var(--ink-2); font-size: 12px; }
+  .legend .item { display: flex; align-items: center; gap: 6px; }
+  .swatch { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  .swatch.sq { width: 11px; height: 11px; border-radius: 3px; }
+  .tri { width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; }
+  .tri.up { border-bottom: 8px solid var(--buy); }
+  .tri.down { border-top: 8px solid var(--sell); }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .panel .ptitle { font-size: 12px; color: var(--ink-2); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .panel canvas { display: block; width: 100%; }
+  table.metrics { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.metrics td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  table.metrics td.k { color: var(--ink-2); }
+  table.metrics td.v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.metrics td.d { color: var(--muted); font-size: 11px; }
+  #tooltip {
+    position: fixed; pointer-events: none; z-index: 10; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18); display: none; min-width: 150px;
+  }
+  #tooltip .tt-day { color: var(--muted); margin-bottom: 5px; }
+  #tooltip .tt-row { display: flex; justify-content: space-between; gap: 14px; }
+  #tooltip .tt-row .lab { color: var(--ink-2); }
+  #tooltip .tt-row .num { font-variant-numeric: tabular-nums; }
+  .notes { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--price); border-radius: 8px; padding: 10px 13px; font-size: 12.5px; line-height: 1.55; color: var(--ink-2); }
+  .notes b { color: var(--ink); }
+  .notes .h { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); display: block; margin-bottom: 5px; font-weight: 600; }
+  .notes ul { margin: 0; padding-left: 16px; }
+  .notes li { margin: 2px 0; }
+  .footnote { color: var(--muted); font-size: 11px; padding: 0 18px 20px; line-height: 1.5; }
+  code { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Algothon 2026 · Research Workbench</h1>
+  <span class="sub" id="hdr-sub"></span>
+  <span class="spacer"></span>
+  <div class="tabs">
+    <button class="tab active" data-mode="instrument">Single instrument</button>
+    <button class="tab" data-mode="portfolio">Portfolio &amp; market</button>
+    <button class="tab" data-mode="signals">Signals</button>
+    <button class="tab" data-mode="explore">Explore</button>
+    <button class="tab" data-mode="compare">Compare</button>
+  </div>
+  <button class="btn" id="theme-btn">◐ theme</button>
+</header>
+
+<div class="layout">
+  <aside class="controls">
+    <div class="card" id="card-inst">
+      <h2>Instrument</h2>
+      <div class="field"><select id="inst"></select></div>
+      <div class="field">
+        <label>View window</label>
+        <div class="presets">
+          <button class="btn active" data-view="all">All</button>
+          <button class="btn" data-view="250">Last 250</button>
+          <button class="btn" data-view="100">100</button>
+          <button class="btn" data-view="50">50</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="card-overlays">
+      <h2>Overlays</h2>
+      <label class="toggle"><input type="checkbox" id="t-bb" checked> Bollinger Bands</label>
+      <div class="field row"><label>BB window</label><input type="number" class="num" id="bbw-n" min="2" max="200" step="1" value="20"></div>
+      <input type="range" id="bbw" min="5" max="60" value="20">
+      <div class="field row"><label>BB σ multiplier</label><input type="number" class="num" id="bbk-n" min="0.5" max="6" step="0.1" value="2.0"></div>
+      <input type="range" id="bbk" min="1" max="4" step="0.1" value="2">
+      <label class="toggle" style="margin-top:10px"><input type="checkbox" id="t-ma" checked> Moving averages</label>
+      <div class="field row"><label>Fast MA</label><input type="number" class="num" id="maf-n" min="2" max="200" step="1" value="10"></div>
+      <input type="range" id="maf" min="2" max="50" value="10">
+      <div class="field row"><label>Slow MA</label><input type="number" class="num" id="mas-n" min="3" max="400" step="1" value="50"></div>
+      <input type="range" id="mas" min="10" max="150" value="50">
+    </div>
+
+    <div class="card" id="card-regime">
+      <h2>Regime shading</h2>
+      <div class="field">
+        <select id="regime">
+          <option value="vol">Volatility regime</option>
+          <option value="trend">Trend regime (MA)</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+      <div class="field row"><label>Vol window</label><input type="number" class="num" id="volw-n" min="2" max="200" step="1" value="20"></div>
+      <input type="range" id="volw" min="5" max="60" value="20">
+      <div class="field row"><label>Calm below (ann. vol)</label><input type="number" class="num" id="rlo-n" min="0.01" max="1" step="0.01" value="0.15"></div>
+      <input type="range" id="rlo" min="0.02" max="0.60" step="0.01" value="0.15">
+      <div class="field row"><label>Turbulent above</label><input type="number" class="num" id="rhi-n" min="0.05" max="2" step="0.01" value="0.30"></div>
+      <input type="range" id="rhi" min="0.05" max="1.00" step="0.01" value="0.30">
+    </div>
+
+    <div class="card" id="card-signal">
+      <h2>Signal (entries / exits)</h2>
+      <div class="field">
+        <select id="signal">
+          <option value="none">None</option>
+          <option value="bbrev" selected>Bollinger reversion</option>
+          <option value="macross">MA crossover (trend)</option>
+          <option value="zrev">Z-score reversion</option>
+          <option value="loaded">Loaded positions</option>
+        </select>
+      </div>
+      <div class="field row"><label>Z entry threshold</label><input type="number" class="num" id="zth-n" min="0.1" max="5" step="0.1" value="1.5"></div>
+      <input type="range" id="zth" min="0.5" max="3" step="0.1" value="1.5">
+      <div class="sub" id="sig-note" style="color:var(--muted);font-size:11px;line-height:1.4"></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- ================= SINGLE-INSTRUMENT VIEW ================= -->
+    <div id="view-instrument">
+      <div class="tiles" id="tiles"></div>
+      <div class="notes" id="notes-instrument"></div>
+      <div class="panel">
+        <div class="ptitle"><span id="price-title">Price</span></div>
+        <div class="legend" id="legend"></div>
+        <canvas id="c-price"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span id="inst-pos-title">Target position size ($)</span><span class="val" id="inst-pos-cur"></span></div>
+        <canvas id="c-inst-pos"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>Rolling annualised volatility</span><span class="val" id="vol-cur"></span></div>
+        <canvas id="c-vol"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span id="eq-title">Strategy equity (single-instrument, gross)</span><span class="val" id="eq-cur"></span></div>
+        <canvas id="c-eq"></canvas>
+      </div>
+    </div>
+
+    <!-- ================= PORTFOLIO / MARKET VIEW ================= -->
+    <div id="view-portfolio" class="hidden">
+      <div class="ptitle" style="font-size:12px;color:var(--muted);margin:0 2px 2px">Universe (all instruments, price data only)</div>
+      <div class="tiles" id="mkt-tiles"></div>
+      <div class="ptitle" style="font-size:12px;color:var(--muted);margin:8px 2px 2px">Equal-weight long/short portfolio of the selected signal, across all instruments (gross of fees)</div>
+      <div class="tiles" id="pf-tiles"></div>
+      <div class="notes" id="notes-portfolio"></div>
+
+      <div class="panel">
+        <div class="ptitle"><span>Whole-book stance (selected signal) &mdash; names long (green) / short (red) each day; net tilt = line</span><span class="val" id="pf-stance-cur"></span></div>
+        <canvas id="c-pf-stance"></canvas>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle"><span>Signal leaderboard &mdash; every catalog signal as an equal-weight book (click a row to load it above)</span></div>
+        <table class="metrics" id="pf-leaderboard"></table>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle"><span>Portfolio equity &amp; drawdown (equal-weight, gross)</span><span class="val" id="pf-eq-cur"></span></div>
+        <canvas id="c-pf-eq"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>Daily total-return distribution</span><span class="val" id="pf-hist-cur"></span></div>
+        <canvas id="c-pf-hist"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>Monte Carlo — 160 bootstrap-resampled equity paths (skill vs luck)</span><span class="val" id="pf-mc-cur"></span></div>
+        <canvas id="c-pf-mc"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>All instruments — normalised to 100 at window start</span><span class="val" id="pf-norm-cur"></span></div>
+        <div class="legend" id="pf-norm-legend"></div>
+        <canvas id="c-pf-norm"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>Signal return by instrument (over view, gross)</span><span class="val" id="pf-contrib-cur"></span></div>
+        <canvas id="c-pf-contrib"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>Portfolio metrics</span></div>
+        <table class="metrics" id="pf-table"></table>
+      </div>
+    </div>
+
+    <!-- ================= SIGNALS VIEW ================= -->
+    <div id="view-signals" class="hidden">
+      <div class="panel">
+        <div class="ptitle">
+          <span>Inspect signal &mdash; predictive power (IC = corr of signal vs forward return)</span>
+          <select id="sig-inspect" style="width:auto;padding:3px 8px"></select>
+        </div>
+        <div class="tiles" id="sig-tiles"></div>
+        <div class="notes" id="notes-signals" style="margin-top:10px"></div>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>Information Coefficient by horizon (days ahead)</span></div>
+        <canvas id="c-sig-ic"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>IC decay (horizon 1&ndash;20 days) &mdash; where the edge lives</span></div>
+        <canvas id="c-sig-decay"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>Forward 5-day return by signal quintile, market-neutral (Q5&minus;Q1 spread = the edge) &mdash; monotonic is good</span></div>
+        <canvas id="c-sig-quant"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>IC ranking &mdash; all signals (over the selected window)</span></div>
+        <table class="metrics" id="sig-table"></table>
+      </div>
+    </div>
+
+    <!-- ================= EXPLORE / PLANNING VIEW ================= -->
+    <div id="view-explore" class="hidden">
+      <div class="notes" id="notes-explore"></div>
+      <div class="panel">
+        <div class="ptitle"><span>Universe overview &mdash; price paths normalised to 100 (click a panel to inspect)</span></div>
+        <canvas id="c-exp-grid"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span id="exp-price-title">Price</span></div>
+        <canvas id="c-exp-price"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>Daily returns</span></div>
+        <canvas id="c-exp-ret"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>Residual vs ALGO (stock &minus; beta&middot;index) &mdash; the idiosyncratic part</span><span class="val" id="exp-resid-cur"></span></div>
+        <canvas id="c-exp-resid"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>Return correlation heatmap (ALGO = index, row/col 0)</span></div>
+        <canvas id="c-exp-corr"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>Beta to ALGO (market factor loading) per instrument</span></div>
+        <canvas id="c-exp-beta"></canvas>
+      </div>
+    </div>
+
+    <!-- ================= COMPARE VIEW ================= -->
+    <div id="view-compare" class="hidden">
+      <div class="notes" id="notes-compare"></div>
+      <div class="panel">
+        <div class="ptitle"><span>Strategy comparison — cumulative PnL (real, fee-aware, last 250 days)</span></div>
+        <div class="legend" id="compare-legend"></div>
+        <canvas id="c-compare"></canvas>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>Metrics — sorted by Score</span></div>
+        <table class="metrics" id="compare-table"></table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="tooltip"></div>
+
+<p class="footnote">
+  Offline workbench generated from <code>prices.txt</code>. Overlays, regimes and portfolio stats are computed live in your browser.
+  Built-in signals are <b>illustrative</b> — they show how entries/exits and portfolio risk behave, not a strategy to submit.
+  Portfolio equity is an <b>equal-weight (1/N), gross-of-fees</b> mark-to-market of the selected signal across all instruments; Sharpe/Sortino/etc. are on those daily returns.
+  The <b>official, fee- and position-limit-aware</b> numbers come from <code>backtester.py --stats</code> (and <code>eval.py</code>).
+  To overlay your own book: <code>python backtester.py --export-positions pos.csv</code> then <code>python dashboard.py --positions pos.csv</code> and pick "Loaded positions".
+</p>
+
+<script>
+const DATA = /*__DATA__*/null;
+const ANN = 250; // annualisation to match the competition scoring
+
+// ---- small math -------------------------------------------------------------
+function mean(a){ let s=0,n=0; for(const x of a){ if(!isNaN(x)){s+=x;n++;} } return n?s/n:0; }
+function stdev(a){ const m=mean(a); let s=0,n=0; for(const x of a){ if(!isNaN(x)){s+=(x-m)*(x-m);n++;} } return n?Math.sqrt(s/n):0; }
+function downsideDev(a){ let s=0,n=0; for(const x of a){ if(!isNaN(x)){ n++; if(x<0) s+=x*x; } } return n?Math.sqrt(s/n):0; }
+function percentile(a, p){ const b=a.filter(x=>!isNaN(x)).slice().sort((x,y)=>x-y); if(!b.length) return 0; const i=Math.max(0,Math.min(b.length-1,Math.floor(p/100*b.length))); return b[i]; }
+
+// ---- indicator math ---------------------------------------------------------
+function sma(a, w) {
+  const out = new Array(a.length).fill(NaN);
+  let s = 0;
+  for (let i = 0; i < a.length; i++) {
+    s += a[i];
+    if (i >= w) s -= a[i - w];
+    if (i >= w - 1) out[i] = s / w;
+  }
+  return out;
+}
+function rollStd(a, w) {
+  const out = new Array(a.length).fill(NaN);
+  let s = 0, s2 = 0;
+  for (let i = 0; i < a.length; i++) {
+    s += a[i]; s2 += a[i] * a[i];
+    if (i >= w) { s -= a[i - w]; s2 -= a[i - w] * a[i - w]; }
+    if (i >= w - 1) { const m = s / w; out[i] = Math.sqrt(Math.max(0, s2 / w - m * m)); }
+  }
+  return out;
+}
+function bollinger(price, w, k) {
+  const mid = sma(price, w), sd = rollStd(price, w);
+  const upper = mid.map((m, i) => m + k * sd[i]);
+  const lower = mid.map((m, i) => m - k * sd[i]);
+  return { mid, upper, lower, sd };
+}
+function logReturns(price) {
+  const r = new Array(price.length).fill(NaN);
+  for (let i = 1; i < price.length; i++) r[i] = Math.log(price[i] / price[i - 1]);
+  return r;
+}
+function pctReturns(price) {
+  const r = new Array(price.length).fill(NaN);
+  for (let i = 1; i < price.length; i++) r[i] = price[i] / price[i - 1] - 1;
+  return r;
+}
+function rollVol(price, w) {
+  const r = logReturns(price);
+  const out = new Array(price.length).fill(NaN);
+  let s = 0, s2 = 0, n = 0; const buf = [];
+  for (let i = 1; i < price.length; i++) {
+    const x = r[i]; buf.push(x); s += x; s2 += x * x; n++;
+    if (buf.length > w) { const y = buf.shift(); s -= y; s2 -= y * y; n--; }
+    if (n >= w) { const m = s / n; out[i] = Math.sqrt(Math.max(0, s2 / n - m * m)) * Math.sqrt(ANN); }
+  }
+  return out;
+}
+function zscoreArr(price, w) {
+  const m = sma(price, w), sd = rollStd(price, w);
+  return price.map((p, i) => (sd[i] > 1e-9 ? (p - m[i]) / sd[i] : NaN));
+}
+
+// ---- signals: target position in {-1,0,1} -----------------------------------
+function sigBollRev(price, w, k) {
+  const bb = bollinger(price, w, k); const pos = new Array(price.length).fill(0); let cur = 0;
+  for (let i = 0; i < price.length; i++) {
+    if (isNaN(bb.mid[i])) { pos[i] = 0; continue; }
+    if (cur === 0) { if (price[i] < bb.lower[i]) cur = 1; else if (price[i] > bb.upper[i]) cur = -1; }
+    else if (cur === 1 && price[i] >= bb.mid[i]) cur = 0;
+    else if (cur === -1 && price[i] <= bb.mid[i]) cur = 0;
+    pos[i] = cur;
+  }
+  return pos;
+}
+function sigMACross(price, fast, slow) {
+  const f = sma(price, fast), s = sma(price, slow);
+  return price.map((_, i) => (isNaN(s[i]) ? 0 : (f[i] > s[i] ? 1 : -1)));
+}
+function sigZRev(price, w, th) {
+  const z = zscoreArr(price, w); const pos = new Array(price.length).fill(0); let cur = 0;
+  for (let i = 0; i < price.length; i++) {
+    if (isNaN(z[i])) { pos[i] = 0; continue; }
+    if (cur === 0) { if (z[i] < -th) cur = 1; else if (z[i] > th) cur = -1; }
+    else if (cur === 1 && z[i] >= 0) cur = 0;
+    else if (cur === -1 && z[i] <= 0) cur = 0;
+    pos[i] = cur;
+  }
+  return pos;
+}
+// resolve a signal key to a loaded book: "loaded" -> DATA.positions; "book:N" -> DATA.books[N]
+function bookFor(key) {
+  if (key === "loaded") return DATA.positions;
+  if (key && key.startsWith("book:")) return (DATA.books || [])[+key.slice(5)];
+  return null;
+}
+function sigLoadedForBook(instIdx, book) {
+  const name = DATA.names[instIdx];
+  if (!book || !book.byName[name]) return null;
+  const days = book.days, raw = book.byName[name];
+  const dset = new Set(days);
+  const pos = new Array(DATA.nDays).fill(0);
+  for (let i = 0; i < days.length; i++) { const idx = days[i] - 1; if (idx >= 0 && idx < pos.length) pos[idx] = Math.sign(raw[i]) || 0; }
+  let last = 0, started = false;
+  for (let i = 0; i < pos.length; i++) { if (dset.has(i + 1)) { last = pos[i]; started = true; } else if (started) pos[i] = last; }
+  return pos;
+}
+function sigLoadedFor(instIdx) { return sigLoadedForBook(instIdx, DATA.positions); }
+// a real (cross-sectional) signal's per-instrument position = sign of its
+// demeaned score across the universe each day (long cheap, short rich). Cached
+// per signal name — catalog signals depend only on prices, never on sliders.
+let _catCache = {};
+function catSignMatrix(name) {
+  if (_catCache[name]) return _catCache[name];
+  const N = DATA.prices.length, mat = Array.from({ length: N }, () => new Array(DATA.nDays).fill(0));
+  for (let t = 60; t < DATA.nDays; t++) {
+    const s = scoresAt(name, t), fin = s.filter(isFinite);
+    const m = fin.reduce((a, b) => a + b, 0) / (fin.length || 1);
+    for (let k = 0; k < N; k++) mat[k][t] = Math.sign((s[k] - m) || 0);
+  }
+  _catCache[name] = mat;
+  return mat;
+}
+function catalogPositions(instIdx, name) { return catSignMatrix(name)[instIdx]; }
+function signalFor(instIdx, price) {
+  if (state.signal.startsWith("cat:")) return catalogPositions(instIdx, state.signal.slice(4));
+  if (state.signal.startsWith("book:")) return sigLoadedForBook(instIdx, bookFor(state.signal));
+  switch (state.signal) {
+    case "bbrev": return sigBollRev(price, state.bbw, state.bbk);
+    case "macross": return sigMACross(price, state.maf, state.mas);
+    case "zrev": return sigZRev(price, state.volw, state.zth);
+    case "loaded": return sigLoadedFor(instIdx);
+    default: return null;
+  }
+}
+
+// ---- regimes ----------------------------------------------------------------
+function volRegime(price, w, lo, hi) {
+  const v = rollVol(price, w);
+  return v.map(x => (isNaN(x) ? 0 : (x < lo ? -1 : (x > hi ? 1 : 0))));
+}
+function trendRegime(price, fast, slow) {
+  const f = sma(price, fast), s = sma(price, slow);
+  return price.map((_, i) => (isNaN(s[i]) ? 0 : (f[i] > s[i] ? 1 : -1)));
+}
+
+// ---- equity + metrics -------------------------------------------------------
+function equityFromRets(rets, i0, i1) {
+  const eq = []; let e = 1;
+  for (let i = i0; i <= i1; i++) { if (i > i0 && !isNaN(rets[i])) e *= (1 + rets[i]); eq.push(e); }
+  return eq;
+}
+function strategyRets(price, pos) {
+  const r = pctReturns(price);
+  const out = new Array(price.length).fill(0);
+  for (let i = 1; i < price.length; i++) out[i] = (pos[i - 1] || 0) * (isNaN(r[i]) ? 0 : r[i]);
+  return out;
+}
+function countTrades(pos, i0, i1) {
+  let n = 0; for (let i = Math.max(1, i0); i <= i1; i++) if ((pos[i] || 0) !== (pos[i - 1] || 0)) n++; return n;
+}
+// metrics on a daily-return slice [i0..i1]
+function metricsFromRets(rets, i0, i1) {
+  const slice = []; for (let i = i0 + 1; i <= i1; i++) slice.push(rets[i] || 0);
+  const m = mean(slice), sd = stdev(slice), dd = downsideDev(slice);
+  const eq = equityFromRets(rets, i0, i1);
+  const total = eq[eq.length - 1] - 1;
+  const n = slice.length || 1;
+  const annRet = Math.pow(1 + total, ANN / n) - 1;
+  let peak = -Infinity, maxdd = 0;
+  for (const e of eq) { peak = Math.max(peak, e); maxdd = Math.max(maxdd, (peak - e) / peak); }
+  const sharpe = sd > 1e-12 ? m / sd * Math.sqrt(ANN) : 0;
+  const sortino = dd > 1e-12 ? m / dd * Math.sqrt(ANN) : 0;
+  const calmar = maxdd > 1e-9 ? annRet / maxdd : 0;
+  const hit = slice.filter(x => x > 0).length / (slice.filter(x => x !== 0).length || 1);
+  return { mean: m, std: sd, sharpe, sortino, calmar, annRet, total, maxdd,
+           hit, best: Math.max(...slice, 0), worst: Math.min(...slice, 0),
+           var95: percentile(slice, 5), eq };
+}
+
+// ---- official competition Score (mirrors eval.py / backtester.score) --------
+// Score = mu · SR²/(SR²+1), SR = √250·mu/σ, on the daily PnL series. The dashboard
+// book is equal-weight & gross, so we scale returns by a $ notional (the total
+// position-limit budget) to land near the graded magnitude — an ESTIMATE; the
+// exact fee-aware number is `backtester.py --stats`.
+const DLR_LIMIT = k => (k === 0 ? 100000 : 10000);
+let NOTIONAL_TOTAL = null;
+function notionalTotal() { if (NOTIONAL_TOTAL == null) { let s = 0; for (let k = 0; k < DATA.prices.length; k++) s += DLR_LIMIT(k); NOTIONAL_TOTAL = s; } return NOTIONAL_TOTAL; }
+function officialScore(mu, sigma) {
+  if (mu <= 0 || sigma < 1e-12) return mu;
+  const sr = Math.sqrt(ANN) * mu / sigma, frac = sr * sr / (sr * sr + 1);
+  return mu * frac;
+}
+// Score of a daily-return series scaled to a $ notional (default = total budget)
+function scoreEst(meanRet, sdRet, notional) { return (notional || notionalTotal()) * officialScore(meanRet, sdRet); }
+
+// ---- portfolio (all instruments) --------------------------------------------
+function computePortfolio(i0, i1) {
+  const N = DATA.prices.length;
+  const combined = new Array(DATA.nDays).fill(0);
+  const contrib = [];
+  let counted = 0;
+  for (let k = 0; k < N; k++) {
+    const price = DATA.prices[k];
+    const pos = signalFor(k, price);
+    if (!pos) continue;
+    counted++;
+    const sr = strategyRets(price, pos);
+    for (let i = 1; i < DATA.nDays; i++) combined[i] += sr[i];
+    const eqk = equityFromRets(sr, i0, i1);
+    contrib.push({ name: DATA.names[k], idx: k, ret: eqk[eqk.length - 1] - 1,
+                   trades: countTrades(pos, i0, i1) });
+  }
+  const denom = counted || 1;
+  for (let i = 0; i < DATA.nDays; i++) combined[i] /= denom;
+  contrib.sort((a, b) => a.ret - b.ret);
+  const totalTrades = contrib.reduce((s, c) => s + c.trades, 0);
+  return { rets: combined, contrib, counted, totalTrades };
+}
+
+// ---- market stats (price data only, cached per view) ------------------------
+let MKT_CACHE = {};
+function marketStats(i0, i1) {
+  const key = i0 + "_" + i1;
+  if (MKT_CACHE[key]) return MKT_CACHE[key];
+  const N = DATA.prices.length;
+  const rets = [], vols = [], perf = [];
+  for (let k = 0; k < N; k++) {
+    const p = DATA.prices[k];
+    const r = []; for (let i = i0 + 1; i <= i1; i++) r.push(Math.log(p[i] / p[i - 1]));
+    rets.push(r);
+    vols.push(stdev(r) * Math.sqrt(ANN));
+    perf.push({ name: DATA.names[k], idx: k, ret: p[i1] / p[i0] - 1 });
+  }
+  // average pairwise correlation
+  const ms = rets.map(r => mean(r)), sds = rets.map(r => stdev(r));
+  let cs = 0, cn = 0;
+  for (let a = 0; a < N; a++) for (let b = a + 1; b < N; b++) {
+    const ra = rets[a], rb = rets[b]; if (sds[a] < 1e-12 || sds[b] < 1e-12) continue;
+    let cov = 0; for (let i = 0; i < ra.length; i++) cov += (ra[i] - ms[a]) * (rb[i] - ms[b]);
+    cov /= ra.length; cs += cov / (sds[a] * sds[b]); cn++;
+  }
+  perf.sort((a, b) => b.ret - a.ret);
+  const out = { avgVol: mean(vols), avgCorr: cn ? cs / cn : 0,
+                best: perf[0], worst: perf[perf.length - 1], nInst: N };
+  MKT_CACHE[key] = out; return out;
+}
+
+// ---- state ------------------------------------------------------------------
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const state = {
+  mode: "instrument", inst: 0, view: "all",
+  bb: true, bbw: 20, bbk: 2.0, ma: true, maf: 10, mas: 50,
+  regime: "vol", volw: 20, rlo: 0.15, rhi: 0.30,
+  signal: "bbrev", zth: 1.5, hover: null,
+  sigInspect: "rev_blend",
+};
+function viewRange() { const N = DATA.nDays; const i1 = N - 1; const i0 = state.view === "all" ? 0 : Math.max(0, N - state.view); return [i0, i1]; }
+
+// ---- canvas helpers ---------------------------------------------------------
+function fitCanvas(cv, h) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.parentElement.clientWidth - 24;
+  cv.style.height = h + "px"; cv.width = Math.max(1, Math.round(w * dpr)); cv.height = Math.round(h * dpr);
+  const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return { ctx, w, h };
+}
+const PAD = { l: 52, r: 14, t: 10, b: 22 };
+function makeScale(v0, v1, x0, x1, invert) {
+  const span = (v1 - v0) || 1;
+  return v => invert ? x1 - (v - v0) / span * (x1 - x0) : x0 + (v - v0) / span * (x1 - x0);
+}
+function niceTicks(min, max, n) {
+  const span = (max - min) || 1; const step0 = span / n;
+  const mag = Math.pow(10, Math.floor(Math.log10(step0))); const norm = step0 / mag;
+  const step = (norm >= 5 ? 5 : norm >= 2 ? 2 : 1) * mag;
+  const start = Math.ceil(min / step) * step; const ticks = [];
+  for (let t = start; t <= max + 1e-9; t += step) ticks.push(t); return ticks;
+}
+function drawAxes(ctx, W, H, xs, ys, yticks, xdomain, yfmt) {
+  ctx.strokeStyle = cssVar("--grid"); ctx.lineWidth = 1; ctx.font = "11px system-ui, sans-serif"; ctx.textBaseline = "middle";
+  for (const t of yticks) {
+    const y = Math.round(ys(t)) + 0.5;
+    ctx.strokeStyle = cssVar("--grid"); ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke();
+    ctx.fillStyle = cssVar("--muted"); ctx.textAlign = "right"; ctx.fillText((yfmt || fmtNum)(t), PAD.l - 6, y);
+  }
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  const [d0, d1] = xdomain;
+  const xticks = niceTicks(d0, d1, 8).filter(t => t >= d0 && t <= d1);
+  for (const t of xticks) {
+    const x = Math.round(xs(t)) + 0.5;
+    ctx.strokeStyle = cssVar("--grid"); ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, H - PAD.b); ctx.stroke();
+    ctx.fillStyle = cssVar("--muted"); ctx.fillText("d" + Math.round(t + 1), x, H - PAD.b + 5);
+  }
+}
+function polyline(ctx, arr, xs, ys, i0, i1, color, width, alpha) {
+  ctx.save(); if (alpha != null) ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color; ctx.lineWidth = width || 2; ctx.lineJoin = "round"; ctx.lineCap = "round";
+  ctx.beginPath(); let started = false;
+  for (let i = i0; i <= i1; i++) {
+    const v = arr[i]; if (v == null || isNaN(v)) { started = false; continue; }
+    const x = xs(i), y = ys(v); if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+  }
+  ctx.stroke(); ctx.restore();
+}
+function fmtNum(v) {
+  if (Math.abs(v) >= 1000) return v.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (Math.abs(v) >= 10) return v.toFixed(1); return v.toFixed(2);
+}
+const fmtPct = v => (v >= 0 ? "+" : "") + (v * 100).toFixed(2) + "%";
+const fmtPct1 = v => (v >= 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
+
+// ---- regime shading ---------------------------------------------------------
+function shadeRegime(ctx, regArr, xs, i0, i1, H, kind) {
+  let runStart = i0, runVal = regArr[i0];
+  const flush = (a, b, val) => {
+    let col = null;
+    if (kind === "vol") col = val === -1 ? cssVar("--calm") : val === 1 ? cssVar("--turbulent") : null;
+    else if (kind === "trend") col = val === 1 ? cssVar("--up") : val === -1 ? cssVar("--down") : null;
+    if (!col) return;
+    ctx.fillStyle = col; const xa = xs(a - 0.5), xb = xs(b + 0.5); ctx.fillRect(xa, PAD.t, xb - xa, H - PAD.t - PAD.b);
+  };
+  for (let i = i0 + 1; i <= i1; i++) if (regArr[i] !== runVal) { flush(runStart, i - 1, runVal); runStart = i; runVal = regArr[i]; }
+  flush(runStart, i1, runVal);
+}
+
+// ---- render dispatch --------------------------------------------------------
+let SCALES = {};
+function render() {
+  const show = id => document.getElementById(id).classList.remove("hidden");
+  const hide = id => document.getElementById(id).classList.add("hidden");
+  ["view-instrument", "view-portfolio", "view-signals", "view-explore", "view-compare"].forEach(hide);
+  if (state.mode === "instrument") { show("view-instrument"); renderInstrument(); notesInstrument(); }
+  else if (state.mode === "portfolio") { show("view-portfolio"); renderPortfolio(); notesPortfolio(); }
+  else if (state.mode === "signals") { show("view-signals"); renderSignals(); notesSignals(); }
+  else if (state.mode === "explore") { show("view-explore"); renderExplore(); }
+  else { show("view-compare"); renderCompare(); }
+}
+
+// ================= INSTRUMENT VIEW =================
+function renderInstrument() {
+  const price = DATA.prices[state.inst];
+  const [i0, i1] = viewRange();
+  const bb = bollinger(price, state.bbw, state.bbk);
+  const maf = sma(price, state.maf), mas = sma(price, state.mas);
+  const vol = rollVol(price, state.volw);
+  const reg = state.regime === "vol" ? volRegime(price, state.volw, state.rlo, state.rhi)
+            : state.regime === "trend" ? trendRegime(price, state.maf, state.mas) : null;
+  const pos = signalFor(state.inst, price);
+  const sr = pos ? strategyRets(price, pos) : null;
+
+  drawPrice(price, bb, maf, mas, reg, pos, i0, i1);
+  drawInstPosition(i0, i1);
+  drawVol(vol, reg, i0, i1);
+  drawEq(sr, pos, i0, i1);
+  updateInstTiles(price, vol, pos, sr, i0, i1);
+  updateLegend();
+}
+// continuous $ target position for the selected instrument under the current signal —
+// shows the smooth exit: ramps up when the name is cheap, decays to ~0 as it reverts.
+function targetDollarSeries(instIdx) {
+  const out = new Array(DATA.nDays).fill(NaN), limit = DLR_LIMIT(instIdx);
+  if (state.signal === "none") return null;
+  if (state.signal.startsWith("cat:")) {
+    const name = state.signal.slice(4);
+    for (let t = 60; t < DATA.nDays; t++) {
+      const s = scoresAt(name, t), fin = s.filter(isFinite);
+      const m = fin.reduce((a, b) => a + b, 0) / (fin.length || 1);
+      const frac = Math.max(-1, Math.min(1, (s[instIdx] - m) / 2.0));   // /SCALE=2
+      out[t] = frac * limit;
+    }
+  } else if (state.signal === "loaded" || state.signal.startsWith("book:")) {  // real book: actual $ position = shares × price
+    const name = DATA.names[instIdx], price = DATA.prices[instIdx];
+    const book = bookFor(state.signal);
+    if (!book || !book.byName[name]) return null;
+    const days = book.days, raw = book.byName[name];
+    for (let i = 0; i < days.length; i++) { const idx = days[i] - 1; if (idx >= 0 && idx < out.length) out[idx] = raw[i] * price[idx]; }
+  } else {                                    // illustrative signals are ±1 sign
+    const pos = signalFor(instIdx, DATA.prices[instIdx]);
+    if (!pos) return null;
+    for (let t = 0; t < DATA.nDays; t++) out[t] = (pos[t] || 0) * limit;
+  }
+  return out;
+}
+function drawInstPosition(i0, i1) {
+  const cv = document.getElementById("c-inst-pos"); const { ctx, w: W, h: H } = fitCanvas(cv, 130); ctx.clearRect(0, 0, W, H);
+  const title = document.getElementById("inst-pos-title");
+  if (title) title.textContent = (state.signal === "loaded" || state.signal.startsWith("book:"))
+    ? "Actual position size ($) — this book: shares × price (long > 0 / short < 0)"
+    : "Target position size ($) — continuous; ramps up when cheap, decays to 0 as the reversion completes (that's the exit)";
+  const pos = targetDollarSeries(state.inst);
+  if (!pos) { ctx.fillStyle = cssVar("--muted"); ctx.font = "12px system-ui"; ctx.textAlign = "center"; ctx.fillText("Select a signal to see position sizing", W / 2, H / 2); document.getElementById("inst-pos-cur").textContent = ""; return; }
+  const lim = DLR_LIMIT(state.inst);
+  let lo = -lim * 0.15, hi = lim * 0.15;
+  for (let i = i0; i <= i1; i++) if (isFinite(pos[i])) { lo = Math.min(lo, pos[i]); hi = Math.max(hi, pos[i]); }
+  const padv = (hi - lo) * 0.08 || 1; lo -= padv; hi += padv;
+  const xs = makeScale(i0, i1, PAD.l, W - PAD.r), ys = makeScale(lo, hi, PAD.t, H - PAD.b, true);
+  drawAxes(ctx, W, H, xs, ys, niceTicks(lo, hi, 4), [i0, i1], v => (v / 1000).toFixed(0) + "k");
+  const yb = Math.round(ys(0)) + 0.5; ctx.strokeStyle = cssVar("--axis"); ctx.beginPath(); ctx.moveTo(PAD.l, yb); ctx.lineTo(W - PAD.r, yb); ctx.stroke();
+  // shade long (green) / short (red) area to the zero line
+  ctx.beginPath(); let st2 = false;
+  for (let i = i0; i <= i1; i++) { if (!isFinite(pos[i])) { st2 = false; continue; } const x = xs(i), y = ys(pos[i]); if (!st2) { ctx.moveTo(x, yb); ctx.lineTo(x, y); st2 = true; } else ctx.lineTo(x, y); }
+  ctx.lineTo(xs(i1), yb); ctx.closePath(); ctx.fillStyle = cssVar("--price") + "22"; ctx.fill();
+  polyline(ctx, pos, xs, ys, i0, i1, cssVar("--price"), 2);
+  drawCrosshairV(ctx, xs, W, H);
+  const cur = pos[i1]; const el = document.getElementById("inst-pos-cur");
+  el.textContent = isFinite(cur) ? `$${cur.toFixed(0)} now (${cur >= 0 ? "long" : "short"})` : "";
+  el.className = "val " + (cur >= 0 ? "pos" : "neg");
+}
+
+function drawPrice(price, bb, maf, mas, reg, pos, i0, i1) {
+  const cv = document.getElementById("c-price"); const { ctx, w: W, h: H } = fitCanvas(cv, 340);
+  ctx.clearRect(0, 0, W, H);
+  let lo = Infinity, hi = -Infinity;
+  for (let i = i0; i <= i1; i++) { lo = Math.min(lo, price[i]); hi = Math.max(hi, price[i]);
+    if (state.bb && !isNaN(bb.upper[i])) { lo = Math.min(lo, bb.lower[i]); hi = Math.max(hi, bb.upper[i]); } }
+  const padv = (hi - lo) * 0.06 || 1; lo -= padv; hi += padv;
+  const xs = makeScale(i0, i1, PAD.l, W - PAD.r), ys = makeScale(lo, hi, PAD.t, H - PAD.b, true);
+  SCALES = { xs, i0, i1, W };
+  if (reg) shadeRegime(ctx, reg, xs, i0, i1, H, state.regime);
+  drawAxes(ctx, W, H, xs, ys, niceTicks(lo, hi, 6), [i0, i1]);
+  if (state.bb) {
+    ctx.fillStyle = cssVar("--band") + "1f"; ctx.beginPath(); let started = false;
+    for (let i = i0; i <= i1; i++) { if (isNaN(bb.upper[i])) continue; const x = xs(i), y = ys(bb.upper[i]); if (!started){ctx.moveTo(x,y);started=true;} else ctx.lineTo(x,y); }
+    for (let i = i1; i >= i0; i--) { if (isNaN(bb.lower[i])) continue; ctx.lineTo(xs(i), ys(bb.lower[i])); }
+    ctx.closePath(); ctx.fill();
+    polyline(ctx, bb.upper, xs, ys, i0, i1, cssVar("--muted"), 1);
+    polyline(ctx, bb.lower, xs, ys, i0, i1, cssVar("--muted"), 1);
+    polyline(ctx, bb.mid, xs, ys, i0, i1, cssVar("--band"), 1);
+  }
+  if (state.ma) { polyline(ctx, maf, xs, ys, i0, i1, cssVar("--ma-fast"), 1.5); polyline(ctx, mas, xs, ys, i0, i1, cssVar("--ma-slow"), 1.5); }
+  polyline(ctx, price, xs, ys, i0, i1, cssVar("--price"), 2);
+  if (pos) {
+    // position ribbon along the bottom: green = long, red = short, grey = flat.
+    // Makes the selected signal's stance unmistakable at a glance.
+    const ry = H - PAD.b - 6, rh = 5, cw = (xs(i1) - xs(i0)) / Math.max(1, i1 - i0);
+    for (let i = i0; i <= i1; i++) {
+      const p = pos[i] || 0;
+      ctx.fillStyle = p > 0 ? cssVar("--buy") : p < 0 ? cssVar("--sell") : cssVar("--grid");
+      ctx.globalAlpha = p === 0 ? 0.5 : 0.85;
+      ctx.fillRect(xs(i) - cw / 2, ry, cw + 0.6, rh);
+    }
+    ctx.globalAlpha = 1;
+    // entry/exit markers on position changes
+    for (let i = Math.max(1, i0); i <= i1; i++) {
+      const a = pos[i - 1] || 0, b = pos[i] || 0; if (b === a) continue;
+      const x = xs(i), y = ys(price[i]);
+      if (b > a) drawTri(ctx, x, y + 10, cssVar("--buy"), true); else drawTri(ctx, x, y - 10, cssVar("--sell"), false);
+    }
+  }
+  drawCrosshair(ctx, xs, ys, price, W, H, i0, i1);
+}
+function drawTri(ctx, x, y, color, up) {
+  ctx.fillStyle = color; ctx.strokeStyle = cssVar("--surface"); ctx.lineWidth = 2; ctx.beginPath();
+  if (up) { ctx.moveTo(x, y - 7); ctx.lineTo(x - 5, y + 3); ctx.lineTo(x + 5, y + 3); }
+  else { ctx.moveTo(x, y + 7); ctx.lineTo(x - 5, y - 3); ctx.lineTo(x + 5, y - 3); }
+  ctx.closePath(); ctx.stroke(); ctx.fill();
+}
+function drawVol(vol, reg, i0, i1) {
+  const cv = document.getElementById("c-vol"); const { ctx, w: W, h: H } = fitCanvas(cv, 130); ctx.clearRect(0, 0, W, H);
+  let hi = -Infinity; for (let i = i0; i <= i1; i++) if (!isNaN(vol[i])) hi = Math.max(hi, vol[i]);
+  hi = Math.max(hi, state.rhi) * 1.1 || 1;
+  const xs = makeScale(i0, i1, PAD.l, W - PAD.r), ys = makeScale(0, hi, PAD.t, H - PAD.b, true);
+  if (reg && state.regime === "vol") shadeRegime(ctx, reg, xs, i0, i1, H, "vol");
+  drawAxes(ctx, W, H, xs, ys, niceTicks(0, hi, 4), [i0, i1]);
+  for (const [lvl, lab] of [[state.rlo, "calm"], [state.rhi, "turbulent"]]) {
+    const y = Math.round(ys(lvl)) + 0.5; ctx.strokeStyle = cssVar("--axis"); ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = cssVar("--muted"); ctx.textAlign = "left"; ctx.textBaseline = "bottom"; ctx.fillText(lab, PAD.l + 4, y - 1);
+  }
+  polyline(ctx, vol, xs, ys, i0, i1, cssVar("--vol"), 2);
+  drawCrosshairV(ctx, xs, W, H);
+  const cur = vol[i1]; document.getElementById("vol-cur").textContent = isNaN(cur) ? "" : (cur * 100).toFixed(1) + "% ann.";
+}
+function drawEq(sr, pos, i0, i1) {
+  const cv = document.getElementById("c-eq"); const { ctx, w: W, h: H } = fitCanvas(cv, 130); ctx.clearRect(0, 0, W, H);
+  if (!sr) { ctx.fillStyle = cssVar("--muted"); ctx.font = "12px system-ui"; ctx.textAlign = "center";
+    ctx.fillText("Select a signal to see its equity curve", W / 2, H / 2); document.getElementById("eq-cur").textContent = ""; return; }
+  const eq = equityFromRets(sr, i0, i1);
+  let lo = Infinity, hi = -Infinity; for (const e of eq) { lo = Math.min(lo, e); hi = Math.max(hi, e); }
+  const padv = (hi - lo) * 0.08 || 0.01; lo -= padv; hi += padv;
+  const xs = makeScale(i0, i1, PAD.l, W - PAD.r), ys = makeScale(lo, hi, PAD.t, H - PAD.b, true);
+  const posReg = pos.map(p => Math.sign(p || 0)); shadeRegime(ctx, posReg, xs, i0, i1, H, "trend");
+  drawAxes(ctx, W, H, xs, ys, niceTicks(lo, hi, 4), [i0, i1], v => v.toFixed(2));
+  const yb = Math.round(ys(1)) + 0.5; ctx.strokeStyle = cssVar("--axis"); ctx.beginPath(); ctx.moveTo(PAD.l, yb); ctx.lineTo(W - PAD.r, yb); ctx.stroke();
+  const eqFull = new Array(DATA.nDays).fill(NaN); for (let i = i0; i <= i1; i++) eqFull[i] = eq[i - i0];
+  polyline(ctx, eqFull, xs, ys, i0, i1, cssVar("--price"), 2);
+  drawCrosshairV(ctx, xs, W, H);
+  const r = eq[eq.length - 1] - 1; const el = document.getElementById("eq-cur");
+  el.textContent = fmtPct(r) + " over view"; el.className = "val " + (r >= 0 ? "pos" : "neg");
+}
+
+// ================= PORTFOLIO VIEW =================
+function renderPortfolio() {
+  const [i0, i1] = viewRange();
+  const mkt = marketStats(i0, i1);
+  const pf = computePortfolio(i0, i1);
+  const met = metricsFromRets(pf.rets, i0, i1);
+  updateMarketTiles(mkt, i0, i1);
+  updatePfTiles(met, pf);
+  drawPfStance(i0, i1);
+  drawPfEquity(met, i0, i1);
+  drawPfHist(pf.rets, i0, i1);
+  drawPfMC(pf.rets, i0, i1);
+  drawPfNorm(i0, i1);
+  drawPfContrib(pf.contrib, i0, i1);
+  updatePfTable(met, pf);
+  updatePfLeaderboard(i0, i1);
+}
+
+// whole-book stance: how many names are long vs short each day under the selected
+// signal, and the net tilt (long − short). Reveals directional bets (e.g. a book
+// that sits net-short) and how breadth changes over the full history.
+function drawPfStance(i0, i1) {
+  const cv = document.getElementById("c-pf-stance"); const { ctx, w: W, h: H } = fitCanvas(cv, 190); ctx.clearRect(0, 0, W, H);
+  const N = DATA.prices.length;
+  const nLong = new Array(DATA.nDays).fill(0), nShort = new Array(DATA.nDays).fill(0);
+  let counted = 0;
+  for (let k = 0; k < N; k++) {
+    const pos = signalFor(k, DATA.prices[k]); if (!pos) continue; counted++;
+    for (let i = 0; i < DATA.nDays; i++) { const s = pos[i] || 0; if (s > 0) nLong[i]++; else if (s < 0) nShort[i]++; }
+  }
+  const cur = document.getElementById("pf-stance-cur");
+  if (!counted) { ctx.fillStyle = cssVar("--muted"); ctx.font = "12px system-ui"; ctx.textAlign = "center"; ctx.fillText("Pick a strategy book / signal to see the whole-book stance", W / 2, H / 2); if (cur) cur.textContent = ""; return; }
+  let hi = 1; for (let i = i0; i <= i1; i++) hi = Math.max(hi, nLong[i], nShort[i]);
+  const xs = makeScale(i0, i1, PAD.l, W - PAD.r), ys = makeScale(-hi, hi, PAD.t, H - PAD.b, true);
+  drawAxes(ctx, W, H, xs, ys, niceTicks(-hi, hi, 4), [i0, i1], v => Math.abs(v).toFixed(0));
+  const yb = Math.round(ys(0)) + 0.5; ctx.strokeStyle = cssVar("--axis"); ctx.beginPath(); ctx.moveTo(PAD.l, yb); ctx.lineTo(W - PAD.r, yb); ctx.stroke();
+  const areaTo = (arr, sign, color) => {
+    ctx.beginPath(); let st = false;
+    for (let i = i0; i <= i1; i++) { const x = xs(i), y = ys(sign * arr[i]); if (!st) { ctx.moveTo(x, yb); ctx.lineTo(x, y); st = true; } else ctx.lineTo(x, y); }
+    ctx.lineTo(xs(i1), yb); ctx.closePath(); ctx.fillStyle = color + "55"; ctx.fill();
+  };
+  areaTo(nLong, +1, cssVar("--buy"));        // long names above the zero line
+  areaTo(nShort, -1, cssVar("--sell"));      // short names below
+  const net = new Array(DATA.nDays); for (let i = 0; i < DATA.nDays; i++) net[i] = nLong[i] - nShort[i];
+  polyline(ctx, net, xs, ys, i0, i1, cssVar("--price"), 2);   // net tilt line
+  drawCrosshairV(ctx, xs, W, H);
+  if (cur) { const nt = net[i1]; cur.textContent = `now: ${nLong[i1]} long / ${nShort[i1]} short (net ${nt >= 0 ? "+" : ""}${nt})`; cur.className = "val " + (nt >= 0 ? "pos" : "neg"); }
+}
+
+// equal-weight book returns for a catalog signal (matches computePortfolio, but
+// for an arbitrary named signal rather than the currently-selected one).
+function portfolioRetsForCat(name) {
+  const N = DATA.prices.length, combined = new Array(DATA.nDays).fill(0), mat = catSignMatrix(name);
+  for (let k = 0; k < N; k++) {
+    const sr = strategyRets(DATA.prices[k], mat[k]);
+    for (let i = 1; i < DATA.nDays; i++) combined[i] += sr[i];
+  }
+  for (let i = 0; i < DATA.nDays; i++) combined[i] /= (N || 1);
+  return combined;
+}
+// rank EVERY catalog signal by its equal-weight portfolio over the current window.
+function updatePfLeaderboard(i0, i1) {
+  const cur = state.signal.startsWith("cat:") ? state.signal.slice(4) : null;
+  const rows = SIG_LIST.map(name => {
+    const m = metricsFromRets(portfolioRetsForCat(name), i0, i1);
+    return { name, score: scoreEst(m.mean, m.std), sharpe: m.sharpe, sortino: m.sortino, ann: m.annRet, dd: m.maxdd };
+  }).sort((a, b) => b.score - a.score);
+  const num = (v, c) => `<span class="${c}">${v}</span>`;
+  const head = `<tr><td class="k">signal</td><td class="v">Score (gross est.)</td><td class="v">Sharpe</td>` +
+    `<td class="v">Sortino</td><td class="v">ann. return</td><td class="v">max DD</td></tr>`;
+  document.getElementById("pf-leaderboard").innerHTML = head + rows.map(r =>
+    `<tr data-sig="${r.name}" style="cursor:pointer" title="click to load this signal above">` +
+    `<td class="k">${r.name}${r.name === cur ? ' ◀' : ''}</td>` +
+    `<td class="v">${num(r.score.toFixed(0), r.score >= 0 ? 'pos' : 'neg')}</td>` +
+    `<td class="v">${num(r.sharpe.toFixed(2), r.sharpe >= 0 ? 'pos' : 'neg')}</td>` +
+    `<td class="v">${r.sortino.toFixed(2)}</td>` +
+    `<td class="v">${num(fmtPct1(r.ann), r.ann >= 0 ? 'pos' : 'neg')}</td>` +
+    `<td class="v">${(r.dd * 100).toFixed(1)}%</td></tr>`).join("");
+  document.querySelectorAll("#pf-leaderboard tr[data-sig]").forEach(tr => tr.onclick = () => {
+    state.signal = "cat:" + tr.dataset.sig;
+    const sel = document.getElementById("signal"); if (sel) sel.value = state.signal;
+    render();
+  });
+}
+// deterministic PRNG so the Monte Carlo fan is stable across re-renders
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function drawPfHist(rets, i0, i1) {
+  const cv = document.getElementById("c-pf-hist"); const { ctx, w: W, h: H } = fitCanvas(cv, 200); ctx.clearRect(0, 0, W, H);
+  const data = []; for (let i = i0 + 1; i <= i1; i++) data.push((rets[i] || 0) * 100);   // % daily returns
+  const m = mean(data), sd = Math.sqrt(data.reduce((a, b) => a + (b - m) ** 2, 0) / (data.length || 1));
+  const lo = Math.min(...data), hi = Math.max(...data), nb = 41, bw = (hi - lo) / nb || 1;
+  const bins = new Array(nb).fill(0); for (const x of data) bins[Math.min(nb - 1, Math.max(0, Math.floor((x - lo) / bw)))]++;
+  const x0 = PAD.l, x1 = W - PAD.r, ymax = Math.max(...bins);
+  const xs = v => x0 + (v - lo) / ((hi - lo) || 1) * (x1 - x0), ys = c => (H - PAD.b) - c / (ymax || 1) * (H - PAD.b - PAD.t);
+  ctx.strokeStyle = cssVar("--grid"); ctx.beginPath(); ctx.moveTo(x0, H - PAD.b); ctx.lineTo(x1, H - PAD.b); ctx.stroke();
+  for (let b = 0; b < nb; b++) { const cx = xs(lo + b * bw), c = bins[b]; const mid = lo + (b + 0.5) * bw; ctx.fillStyle = mid >= 0 ? cssVar("--buy") : cssVar("--sell"); ctx.globalAlpha = 0.8; ctx.fillRect(cx + 0.5, ys(c), (x1 - x0) / nb - 1, (H - PAD.b) - ys(c)); }
+  ctx.globalAlpha = 1;
+  // mean and ±σ markers
+  for (const [v, lab, col] of [[m, "mean", cssVar("--price")], [m - sd, "−σ", cssVar("--muted")], [m + sd, "+σ", cssVar("--muted")]]) {
+    const x = xs(v); ctx.strokeStyle = col; ctx.setLineDash(lab === "mean" ? [] : [3, 3]); ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, H - PAD.b); ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.fillStyle = cssVar("--muted"); ctx.font = "11px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (const v of niceTicks(lo, hi, 6)) if (v >= lo && v <= hi) ctx.fillText(v.toFixed(2) + "%", xs(v), H - PAD.b + 4);
+  const el = document.getElementById("pf-hist-cur");
+  el.textContent = `mean ${m.toFixed(3)}% · σ ${sd.toFixed(2)}% · skew ${skewOf(data).toFixed(2)} · kurt ${kurtOf(data).toFixed(1)}`;
+}
+function skewOf(a) { const m = mean(a), s = Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length); return s > 1e-9 ? a.reduce((x, y) => x + ((y - m) / s) ** 3, 0) / a.length : 0; }
+function kurtOf(a) { const m = mean(a), s = Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length); return s > 1e-9 ? a.reduce((x, y) => x + ((y - m) / s) ** 4, 0) / a.length - 3 : 0; }
+function drawPfMC(rets, i0, i1) {
+  const cv = document.getElementById("c-pf-mc"); const { ctx, w: W, h: H } = fitCanvas(cv, 220); ctx.clearRect(0, 0, W, H);
+  const data = []; for (let i = i0 + 1; i <= i1; i++) data.push(rets[i] || 0);
+  const T = data.length, PATHS = 160, rand = mulberry32(12345);
+  const finals = [], paths = [];
+  for (let p = 0; p < PATHS; p++) {
+    const eq = [1]; let e = 1;
+    for (let t = 0; t < T; t++) { e *= 1 + data[(rand() * T) | 0]; eq.push(e); }
+    paths.push(eq); finals.push(e - 1);
+  }
+  // real path
+  const real = [1]; for (let t = 0; t < T; t++) real.push(real[t] * (1 + data[t]));
+  let lo = Infinity, hi = -Infinity; for (const eq of paths) for (const v of eq) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  const xs = makeScale(0, T, PAD.l, W - PAD.r), ys = makeScale(lo, hi, PAD.t, H - PAD.b, true);
+  ctx.strokeStyle = cssVar("--grid"); ctx.font = "11px system-ui"; ctx.textBaseline = "middle"; ctx.textAlign = "right";
+  for (const tk of niceTicks(lo, hi, 4)) { const y = Math.round(ys(tk)) + 0.5; ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke(); ctx.fillStyle = cssVar("--muted"); ctx.fillText(tk.toFixed(2), PAD.l - 6, y); ctx.strokeStyle = cssVar("--grid"); }
+  ctx.strokeStyle = cssVar("--muted"); ctx.globalAlpha = 0.10; ctx.lineWidth = 1;
+  for (const eq of paths) { ctx.beginPath(); for (let t = 0; t <= T; t++) { const x = xs(t), y = ys(eq[t]); t ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = cssVar("--price"); ctx.lineWidth = 2; ctx.beginPath();
+  for (let t = 0; t <= T; t++) { const x = xs(t), y = ys(real[t]); t ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke();
+  finals.sort((a, b) => a - b);
+  const p5 = finals[Math.floor(0.05 * PATHS)], p95 = finals[Math.floor(0.95 * PATHS)], pPos = finals.filter(x => x > 0).length / PATHS;
+  const el = document.getElementById("pf-mc-cur");
+  el.textContent = `resampled total return: 5% ${fmtPct(p5)} · 95% ${fmtPct(p95)} · P(profit) ${(pPos * 100).toFixed(0)}%`;
+}
+function updateMarketTiles(mkt, i0, i1) {
+  const tiles = [
+    { k: "Instruments", v: String(mkt.nInst) },
+    { k: "Window", v: (i1 - i0) + " days" },
+    { k: "Avg ann. volatility", v: (mkt.avgVol * 100).toFixed(1) + "%" },
+    { k: "Avg pairwise corr.", v: mkt.avgCorr.toFixed(2) },
+    { k: "Best performer", v: mkt.best.name, cls: "pos", sub: fmtPct1(mkt.best.ret) },
+    { k: "Worst performer", v: mkt.worst.name, cls: "neg", sub: fmtPct1(mkt.worst.ret) },
+  ];
+  document.getElementById("mkt-tiles").innerHTML = tiles.map(t =>
+    `<div class="tile"><div class="k">${t.k}</div><div class="v ${t.cls || ""}" style="font-size:16px">${t.v}${t.sub ? ` <small>${t.sub}</small>` : ""}</div></div>`).join("");
+}
+function updatePfTiles(met, pf) {
+  const est = scoreEst(met.mean, met.std);
+  const tiles = [
+    { k: "Score (gross est.)", v: est.toFixed(1), cls: est > 0 ? "pos" : "neg", hero: true },
+    { k: "Annualised Sharpe", v: met.sharpe.toFixed(2), cls: met.sharpe >= 0 ? "pos" : "neg", hero: true },
+    { k: "Sortino", v: met.sortino.toFixed(2), cls: met.sortino >= 0 ? "pos" : "neg", hero: true },
+    { k: "Expected annual return", v: fmtPct1(met.annRet), cls: met.annRet >= 0 ? "pos" : "neg" },
+    { k: "Avg daily return", v: (met.mean * 100).toFixed(3) + "%", cls: met.mean >= 0 ? "pos" : "neg" },
+    { k: "Ann. volatility", v: (met.std * Math.sqrt(ANN) * 100).toFixed(1) + "%" },
+    { k: "Max drawdown", v: (met.maxdd * 100).toFixed(1) + "%", cls: "neg" },
+    { k: "Calmar", v: met.calmar.toFixed(2) },
+    { k: "Total trades", v: pf.totalTrades.toLocaleString() },
+  ];
+  document.getElementById("pf-tiles").innerHTML = tiles.map(t =>
+    `<div class="tile ${t.hero ? "hero" : ""}"><div class="k">${t.k}</div><div class="v ${t.cls || ""}">${t.v}</div></div>`).join("");
+}
+function drawPfEquity(met, i0, i1) {
+  const cv = document.getElementById("c-pf-eq"); const { ctx, w: W, h: H } = fitCanvas(cv, 240); ctx.clearRect(0, 0, W, H);
+  const eq = met.eq; const split = Math.round((H - PAD.t - PAD.b) * 0.68) + PAD.t;
+  // equity region [PAD.t .. split]
+  let lo = Infinity, hi = -Infinity; for (const e of eq) { lo = Math.min(lo, e); hi = Math.max(hi, e); }
+  const padv = (hi - lo) * 0.08 || 0.01; lo -= padv; hi += padv;
+  const xs = makeScale(i0, i1, PAD.l, W - PAD.r); SCALES = { xs, i0, i1, W };
+  const ysE = v => split - (v - lo) / ((hi - lo) || 1) * (split - PAD.t);
+  ctx.strokeStyle = cssVar("--grid"); ctx.font = "11px system-ui"; ctx.textBaseline = "middle"; ctx.textAlign = "right";
+  for (const t of niceTicks(lo, hi, 4)) { const y = Math.round(ysE(t)) + 0.5; ctx.strokeStyle = cssVar("--grid"); ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke(); ctx.fillStyle = cssVar("--muted"); ctx.fillText(t.toFixed(2), PAD.l - 6, y); }
+  const yb = Math.round(ysE(1)) + 0.5; ctx.strokeStyle = cssVar("--axis"); ctx.beginPath(); ctx.moveTo(PAD.l, yb); ctx.lineTo(W - PAD.r, yb); ctx.stroke();
+  const eqFull = new Array(DATA.nDays).fill(NaN); for (let i = i0; i <= i1; i++) eqFull[i] = eq[i - i0];
+  polyline(ctx, eqFull, xs, ysE, i0, i1, cssVar("--price"), 2);
+  // drawdown region [split .. H-PAD.b]
+  let peak = -Infinity; const dd = eq.map(e => { peak = Math.max(peak, e); return (e - peak) / peak; });
+  const ddMin = Math.min(...dd, -0.0001);
+  const ysD = v => (split + 6) - v / (ddMin || -1) * (H - PAD.b - split - 6);
+  const ddFull = new Array(DATA.nDays).fill(NaN); for (let i = i0; i <= i1; i++) ddFull[i] = dd[i - i0];
+  ctx.fillStyle = cssVar("--sell") + "33"; ctx.beginPath(); let st = false;
+  for (let i = i0; i <= i1; i++) { const x = xs(i), y = ysD(ddFull[i]); if (!st){ctx.moveTo(x, ysD(0));ctx.lineTo(x,y);st=true;} else ctx.lineTo(x,y); }
+  ctx.lineTo(xs(i1), ysD(0)); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = cssVar("--muted"); ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText("drawdown  " + (ddMin * 100).toFixed(1) + "% max", PAD.l + 2, split + 4);
+  // x labels
+  ctx.textAlign = "center"; for (const t of niceTicks(i0, i1, 8).filter(t => t >= i0 && t <= i1)) { const x = Math.round(xs(t)) + 0.5; ctx.fillStyle = cssVar("--muted"); ctx.fillText("d" + Math.round(t + 1), x, H - PAD.b + 5); }
+  drawCrosshairV(ctx, xs, W, H);
+  const el = document.getElementById("pf-eq-cur"); el.textContent = fmtPct(met.total) + " over view"; el.className = "val " + (met.total >= 0 ? "pos" : "neg");
+}
+function drawPfNorm(i0, i1) {
+  const cv = document.getElementById("c-pf-norm"); const { ctx, w: W, h: H } = fitCanvas(cv, 240); ctx.clearRect(0, 0, W, H);
+  const N = DATA.prices.length; const norm = [];
+  let lo = Infinity, hi = -Infinity;
+  for (let k = 0; k < N; k++) { const p = DATA.prices[k]; const base = p[i0]; const a = new Array(DATA.nDays).fill(NaN);
+    for (let i = i0; i <= i1; i++) { a[i] = p[i] / base * 100; lo = Math.min(lo, a[i]); hi = Math.max(hi, a[i]); } norm.push(a); }
+  const padv = (hi - lo) * 0.04 || 1; lo -= padv; hi += padv;
+  const xs = makeScale(i0, i1, PAD.l, W - PAD.r), ys = makeScale(lo, hi, PAD.t, H - PAD.b, true);
+  drawAxes(ctx, W, H, xs, ys, niceTicks(lo, hi, 5), [i0, i1]);
+  // 100 baseline
+  const yb = Math.round(ys(100)) + 0.5; ctx.strokeStyle = cssVar("--axis"); ctx.beginPath(); ctx.moveTo(PAD.l, yb); ctx.lineTo(W - PAD.r, yb); ctx.stroke();
+  for (let k = 0; k < N; k++) if (k !== state.inst) polyline(ctx, norm[k], xs, ys, i0, i1, cssVar("--muted"), 1, 0.28);
+  // equal-weight average
+  const avg = new Array(DATA.nDays).fill(NaN); for (let i = i0; i <= i1; i++) { let s = 0; for (let k = 0; k < N; k++) s += norm[k][i]; avg[i] = s / N; }
+  polyline(ctx, avg, xs, ys, i0, i1, cssVar("--price"), 2.5);
+  polyline(ctx, norm[state.inst], xs, ys, i0, i1, cssVar("--ma-fast"), 2);
+  drawCrosshairV(ctx, xs, W, H);
+  document.getElementById("pf-norm-legend").innerHTML =
+    `<span class="item"><span class="swatch" style="background:${cssVar("--price")}"></span>Equal-weight average</span>` +
+    `<span class="item"><span class="swatch" style="background:${cssVar("--ma-fast")}"></span>${DATA.names[state.inst]} (selected)</span>` +
+    `<span class="item"><span class="swatch" style="background:${cssVar("--muted")};opacity:.5"></span>${N - 1} others</span>`;
+}
+function drawPfContrib(contrib, i0, i1) {
+  const cv = document.getElementById("c-pf-contrib"); const { ctx, w: W, h: H } = fitCanvas(cv, 200); ctx.clearRect(0, 0, W, H);
+  const n = contrib.length; const x0 = PAD.l, x1 = W - PAD.r;
+  let lo = Math.min(0, ...contrib.map(c => c.ret)), hi = Math.max(0, ...contrib.map(c => c.ret));
+  const padv = (hi - lo) * 0.08 || 0.01; lo -= padv; hi += padv;
+  const ys = makeScale(lo, hi, PAD.t, H - PAD.b, true);
+  ctx.strokeStyle = cssVar("--grid"); ctx.font = "11px system-ui"; ctx.textBaseline = "middle"; ctx.textAlign = "right";
+  for (const t of niceTicks(lo, hi, 5)) { const y = Math.round(ys(t)) + 0.5; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke(); ctx.fillStyle = cssVar("--muted"); ctx.fillText((t * 100).toFixed(0) + "%", x0 - 6, y); ctx.strokeStyle = cssVar("--grid"); }
+  const yb = Math.round(ys(0)) + 0.5; ctx.strokeStyle = cssVar("--axis"); ctx.beginPath(); ctx.moveTo(x0, yb); ctx.lineTo(x1, yb); ctx.stroke();
+  const slot = (x1 - x0) / n; const bw = Math.min(slot - 1.5, 14);
+  PF_BARS = []; // for hover
+  for (let j = 0; j < n; j++) {
+    const c = contrib[j]; const cx = x0 + slot * (j + 0.5); const y = ys(c.ret);
+    ctx.fillStyle = c.ret >= 0 ? cssVar("--buy") : cssVar("--sell");
+    const top = Math.min(y, yb), hgt = Math.abs(y - yb);
+    ctx.fillRect(cx - bw / 2, top, bw, Math.max(1, hgt));
+    PF_BARS.push({ x: cx - bw / 2, w: bw, name: c.name, ret: c.ret });
+  }
+  // label extremes
+  ctx.fillStyle = cssVar("--ink-2"); ctx.font = "10px system-ui"; ctx.textBaseline = "bottom";
+  if (n) { ctx.textAlign = "left"; ctx.fillText(contrib[0].name, x0 + 2, H - PAD.b - 2);
+    ctx.textAlign = "right"; ctx.fillText(contrib[n - 1].name, x1 - 2, H - PAD.b - 2); }
+  const el = document.getElementById("pf-contrib-cur");
+  const winners = contrib.filter(c => c.ret > 0).length;
+  el.textContent = `${winners}/${n} instruments profitable`;
+}
+function updatePfTable(met, pf) {
+  const rows = [
+    ["Score (gross est.)", scoreEst(met.mean, met.std).toFixed(2), "official Score formula, gross & equal-weight — exact fee-aware value: backtester.py --stats"],
+    ["Annualised Sharpe", met.sharpe.toFixed(3), "√250 · mean/σ of daily returns"],
+    ["Sortino ratio", met.sortino.toFixed(3), "√250 · mean/downside-σ (penalises losses only)"],
+    ["Calmar ratio", met.calmar.toFixed(3), "annualised return ÷ max drawdown"],
+    ["Expected annual return", fmtPct1(met.annRet), "compounded, annualised over the window"],
+    ["Avg daily return", (met.mean * 100).toFixed(4) + "%", "mean of daily portfolio returns"],
+    ["Annualised volatility", (met.std * Math.sqrt(ANN) * 100).toFixed(2) + "%", "√250 · σ of daily returns"],
+    ["Total return (view)", fmtPct(met.total), "cumulative over the selected window"],
+    ["Max drawdown", (met.maxdd * 100).toFixed(2) + "%", "worst peak-to-trough of equity"],
+    ["Hit rate", (met.hit * 100).toFixed(1) + "%", "share of active days that were positive"],
+    ["Best day", fmtPct(met.best), "single best daily return"],
+    ["Worst day", fmtPct(met.worst), "single worst daily return"],
+    ["Daily VaR (95%)", fmtPct(met.var95), "5th-percentile daily return"],
+    ["Instruments traded", String(pf.counted), "with a non-flat position in this signal"],
+    ["Total trades", pf.totalTrades.toLocaleString(), "position changes across all instruments"],
+  ];
+  document.getElementById("pf-table").innerHTML = rows.map(([k, v, d]) =>
+    `<tr><td class="k">${k}</td><td class="v">${v}</td><td class="d">${d}</td></tr>`).join("");
+}
+
+// ================= SIGNALS VIEW =================
+// raw cross-sectional score vectors, matching strategy.py SIGNALS. Higher = long.
+const SIG_LIST = ["rev_blend", "rev_eblend", "rev_z10", "rev_z20", "rev_z30", "rev_z40", "rev_z60",
+                  "rev_ez10", "rev_ez20", "rev_ez40", "rev_ema20", "rev_rankz", "xs_rev5", "momentum60"];
+function _winStats(p, t, w) {
+  const s = Math.max(0, t - w + 1); let sum = 0, n = 0;
+  for (let i = s; i <= t; i++) { sum += p[i]; n++; }
+  const mu = sum / n; let v = 0;
+  for (let i = s; i <= t; i++) v += (p[i] - mu) ** 2;
+  return { mu, sd: Math.sqrt(v / n) };
+}
+function zAt(p, t, w) { const {mu, sd} = _winStats(p, t, w); return sd > 1e-9 ? (p[t] - mu) / sd : 0; }
+function emaAt(p, t, span) { const a = 2 / (span + 1); const s = Math.max(0, t - 3 * span); let e = p[s]; for (let i = s + 1; i <= t; i++) e = a * p[i] + (1 - a) * e; return e; }
+function ewmaZAt(p, t, span) { const a = 2 / (span + 1); const s = Math.max(0, t - 3 * span); let mean = p[s], v = 0; for (let i = s + 1; i <= t; i++) { const d = p[i] - mean; mean += a * d; v = (1 - a) * (v + a * d * d); } const sd = Math.sqrt(v); return sd > 1e-9 ? (p[t] - mean) / sd : 0; }
+function retAt(p, t, w) { return t - w >= 0 ? p[t] / p[t - w] - 1 : 0; }
+function momAt(p, t, w) { return t - w >= 0 ? Math.log(p[t] / p[t - w]) : 0; }
+function crossRank(raw) {
+  const N = raw.length, idx = [...raw.keys()].sort((a, b) => raw[a] - raw[b]), r = new Array(N);
+  for (let i = 0; i < N; i++) r[idx[i]] = N > 1 ? i / (N - 1) : 0.5;
+  return r.map(x => 2 * x - 1);
+}
+function scoresAt(name, t) {
+  const P = DATA.prices, N = P.length, out = new Array(N).fill(0);
+  if (name.startsWith("rev_z")) { const w = parseInt(name.slice(5)); for (let k = 0; k < N; k++) out[k] = -zAt(P[k], t, w); }
+  else if (name === "rev_ema20") { for (let k = 0; k < N; k++) { const {sd} = _winStats(P[k], t, 20); out[k] = sd > 1e-9 ? -(P[k][t] - emaAt(P[k], t, 20)) / sd : 0; } }
+  else if (name === "rev_rankz") { const raw = P.map(p => zAt(p, t, 20)); const r = crossRank(raw); for (let k = 0; k < N; k++) out[k] = -r[k]; }
+  else if (name === "xs_rev5") { const raw = P.map(p => retAt(p, t, 5)); const r = crossRank(raw); for (let k = 0; k < N; k++) out[k] = -r[k]; }
+  else if (name === "rev_blend") { for (let k = 0; k < N; k++) out[k] = -(zAt(P[k], t, 10) + zAt(P[k], t, 20) + zAt(P[k], t, 40)) / 3; }
+  else if (name.startsWith("rev_ez")) { const w = parseInt(name.slice(6)); for (let k = 0; k < N; k++) out[k] = -ewmaZAt(P[k], t, w); }
+  else if (name === "rev_eblend") { for (let k = 0; k < N; k++) out[k] = -(ewmaZAt(P[k], t, 10) + ewmaZAt(P[k], t, 20) + ewmaZAt(P[k], t, 40)) / 3; }
+  else if (name === "momentum60") { for (let k = 0; k < N; k++) out[k] = momAt(P[k], t, 60); }
+  return out;
+}
+function corr(a, b) {
+  const n = a.length; let ma = 0, mb = 0, cn = 0;
+  for (let i = 0; i < n; i++) { if (isFinite(a[i]) && isFinite(b[i])) { ma += a[i]; mb += b[i]; cn++; } }
+  if (cn < 3) return NaN; ma /= cn; mb /= cn;
+  let num = 0, da = 0, db = 0;
+  for (let i = 0; i < n; i++) { if (!isFinite(a[i]) || !isFinite(b[i])) continue; const x = a[i] - ma, y = b[i] - mb; num += x * y; da += x * x; db += y * y; }
+  return (da > 1e-12 && db > 1e-12) ? num / Math.sqrt(da * db) : NaN;
+}
+function fwdRet(t, h) { return DATA.prices.map(p => t + h < DATA.nDays ? p[t + h] / p[t] - 1 : NaN); }
+function scoreMatrix(name, i0, i1) { const rows = []; for (let t = i0; t <= i1; t++) rows.push({ t, s: scoresAt(name, t) }); return rows; }
+function icDetail(rows, h) {
+  const arr = [];
+  for (const { t, s } of rows) { if (t + h >= DATA.nDays) continue; const c = corr(s, fwdRet(t, h)); if (isFinite(c)) arr.push(c); }
+  const m = arr.reduce((a, b) => a + b, 0) / (arr.length || 1);
+  const sd = Math.sqrt(arr.reduce((a, b) => a + (b - m) ** 2, 0) / (arr.length || 1));
+  return { ic: m, ir: sd > 1e-9 ? m / sd : 0 };
+}
+function quantileReturns(name, h, i0, i1, Q) {
+  // Forward returns are demeaned cross-sectionally each day (market-neutral), so
+  // this shows the signal's RELATIVE edge, matching the dollar-neutral book —
+  // not the market drift that would otherwise sit under every quintile.
+  Q = Q || 5; const buck = Array.from({ length: Q }, () => [0, 0]);
+  for (let t = i0; t <= i1; t++) {
+    if (t + h >= DATA.nDays) continue;
+    const s = scoresAt(name, t), N = s.length, idx = [...s.keys()].sort((a, b) => s[a] - s[b]), f = fwdRet(t, h);
+    const fin = f.filter(isFinite); const mf = fin.reduce((a, b) => a + b, 0) / (fin.length || 1);
+    for (let r = 0; r < N; r++) { const q = Math.min(Q - 1, Math.floor(r / N * Q)), k = idx[r]; if (isFinite(f[k])) { buck[q][0] += f[k] - mf; buck[q][1]++; } }
+  }
+  return buck.map(b => b[1] ? b[0] / b[1] : 0);
+}
+function sigWindow() { const [i0, i1] = viewRange(); return [Math.max(i0, 60), i1]; }
+
+function renderSignals() {
+  const name = state.sigInspect;
+  const [s0, i1] = sigWindow();
+  const rows = scoreMatrix(name, s0, i1);
+  const d1 = icDetail(rows, 1), d5 = icDetail(rows, 5), d10 = icDetail(rows, 10);
+  const tiles = [
+    { k: "IC @ 1 day", v: d1.ic.toFixed(3), cls: d1.ic >= 0 ? "pos" : "neg" },
+    { k: "IC @ 5 days", v: d5.ic.toFixed(3), cls: d5.ic >= 0 ? "pos" : "neg", hero: true },
+    { k: "IC @ 10 days", v: d10.ic.toFixed(3), cls: d10.ic >= 0 ? "pos" : "neg" },
+    { k: "IC info-ratio @5", v: d5.ir.toFixed(2), cls: d5.ir >= 0 ? "pos" : "neg" },
+    { k: "Window", v: (i1 - s0) + " days" },
+  ];
+  document.getElementById("sig-tiles").innerHTML = tiles.map(t =>
+    `<div class="tile ${t.hero ? "hero" : ""}"><div class="k">${t.k}</div><div class="v ${t.cls || ""}">${t.v}</div></div>`).join("");
+
+  drawBars("c-sig-ic", [1, 5, 10, 20].map(h => ({ label: h + "d", v: icDetail(rows, h).ic })), v => v.toFixed(3), "IC");
+  drawDecay(rows);
+  drawBars("c-sig-quant", quantileReturns(name, 5, s0, i1).map((v, i) => ({ label: "Q" + (i + 1), v })), v => (v * 100).toFixed(2) + "%", "fwd 5d return");
+  updateSigTable(s0, i1);
+}
+
+function drawBars(canvasId, data, fmt, ylab) {
+  const cv = document.getElementById(canvasId); const { ctx, w: W, h: H } = fitCanvas(cv, 200); ctx.clearRect(0, 0, W, H);
+  const x0 = PAD.l, x1 = W - PAD.r;
+  let lo = Math.min(0, ...data.map(d => d.v)), hi = Math.max(0, ...data.map(d => d.v));
+  const padv = (hi - lo) * 0.15 || 0.001; lo -= padv; hi += padv;
+  const ys = makeScale(lo, hi, PAD.t, H - PAD.b, true);
+  ctx.strokeStyle = cssVar("--grid"); ctx.font = "11px system-ui"; ctx.textBaseline = "middle"; ctx.textAlign = "right";
+  for (const t of niceTicks(lo, hi, 5)) { const y = Math.round(ys(t)) + 0.5; ctx.strokeStyle = cssVar("--grid"); ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke(); ctx.fillStyle = cssVar("--muted"); ctx.fillText(fmt(t), x0 - 6, y); }
+  const yb = Math.round(ys(0)) + 0.5; ctx.strokeStyle = cssVar("--axis"); ctx.beginPath(); ctx.moveTo(x0, yb); ctx.lineTo(x1, yb); ctx.stroke();
+  const slot = (x1 - x0) / data.length, bw = Math.min(slot * 0.6, 48);
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  data.forEach((d, i) => {
+    const cx = x0 + slot * (i + 0.5), y = ys(d.v);
+    ctx.fillStyle = d.v >= 0 ? cssVar("--buy") : cssVar("--sell");
+    ctx.fillRect(cx - bw / 2, Math.min(y, yb), bw, Math.max(1, Math.abs(y - yb)));
+    ctx.fillStyle = cssVar("--muted"); ctx.fillText(d.label, cx, H - PAD.b + 5);
+    ctx.fillStyle = cssVar("--ink-2"); ctx.textBaseline = d.v >= 0 ? "bottom" : "top";
+    ctx.fillText(fmt(d.v), cx, d.v >= 0 ? y - 3 : y + 3); ctx.textBaseline = "top";
+  });
+}
+function drawDecay(rows) {
+  const cv = document.getElementById("c-sig-decay"); const { ctx, w: W, h: H } = fitCanvas(cv, 180); ctx.clearRect(0, 0, W, H);
+  const hs = []; for (let h = 1; h <= 20; h++) hs.push({ h, ic: icDetail(rows, h).ic });
+  let lo = Math.min(0, ...hs.map(x => x.ic)), hi = Math.max(0, ...hs.map(x => x.ic));
+  const padv = (hi - lo) * 0.12 || 0.001; lo -= padv; hi += padv;
+  const xs = makeScale(1, 20, PAD.l, W - PAD.r), ys = makeScale(lo, hi, PAD.t, H - PAD.b, true);
+  ctx.strokeStyle = cssVar("--grid"); ctx.font = "11px system-ui"; ctx.textBaseline = "middle"; ctx.textAlign = "right";
+  for (const t of niceTicks(lo, hi, 4)) { const y = Math.round(ys(t)) + 0.5; ctx.strokeStyle = cssVar("--grid"); ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke(); ctx.fillStyle = cssVar("--muted"); ctx.fillText(t.toFixed(3), PAD.l - 6, y); }
+  const yb = Math.round(ys(0)) + 0.5; ctx.strokeStyle = cssVar("--axis"); ctx.beginPath(); ctx.moveTo(PAD.l, yb); ctx.lineTo(W - PAD.r, yb); ctx.stroke();
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (const h of [1, 5, 10, 15, 20]) { ctx.fillStyle = cssVar("--muted"); ctx.fillText(h + "d", xs(h), H - PAD.b + 5); }
+  const arr = new Array(21).fill(NaN); hs.forEach(x => arr[x.h] = x.ic);
+  polyline(ctx, arr, xs, ys, 1, 20, cssVar("--vol"), 2);
+}
+function updateSigTable(s0, i1) {
+  const rows = SIG_LIST.map(name => {
+    const m = scoreMatrix(name, s0, i1);
+    return { name, ic1: icDetail(m, 1).ic, ic5: icDetail(m, 5).ic, ic10: icDetail(m, 10).ic };
+  }).sort((a, b) => b.ic5 - a.ic5);
+  const cell = v => `<span class="${v >= 0 ? 'pos' : 'neg'}">${v >= 0 ? '+' : ''}${v.toFixed(3)}</span>`;
+  document.getElementById("sig-table").innerHTML =
+    `<tr><td class="k">signal</td><td class="v">IC 1d</td><td class="v">IC 5d</td><td class="v">IC 10d</td></tr>` +
+    rows.map(r => `<tr><td class="k">${r.name}${r.name === state.sigInspect ? ' ◀' : ''}</td>` +
+      `<td class="v">${cell(r.ic1)}</td><td class="v">${cell(r.ic5)}</td><td class="v">${cell(r.ic10)}</td></tr>`).join("");
+}
+
+// ================= EXPLORE VIEW + FACTOR HELPERS =================
+let _betaCache = null;
+function betasToALGO() {
+  if (_betaCache) return _betaCache;
+  const P = DATA.prices, N = P.length, nd = DATA.nDays;
+  const r0 = []; for (let t = 1; t < nd; t++) r0.push(Math.log(P[0][t] / P[0][t - 1]));
+  const m0 = mean(r0); let v0 = 0; for (const x of r0) v0 += (x - m0) ** 2; v0 /= r0.length;
+  const beta = new Array(N), r2 = new Array(N);
+  for (let k = 0; k < N; k++) {
+    const rk = []; for (let t = 1; t < nd; t++) rk.push(Math.log(P[k][t] / P[k][t - 1]));
+    const mk = mean(rk); let cov = 0; for (let i = 0; i < rk.length; i++) cov += (rk[i] - mk) * (r0[i] - m0);
+    cov /= rk.length; beta[k] = v0 > 1e-12 ? cov / v0 : 0;
+    let ss = 0, sr = 0; for (let i = 0; i < rk.length; i++) { const e = rk[i] - beta[k] * r0[i]; ss += (rk[i] - mk) ** 2; sr += (e - (mk - beta[k] * m0)) ** 2; }
+    r2[k] = ss > 1e-12 ? 1 - sr / ss : 0;
+  }
+  _betaCache = { beta, r2, r0, v0, m0 };
+  return _betaCache;
+}
+function retSeries(k) { const p = DATA.prices[k], a = [NaN]; for (let t = 1; t < DATA.nDays; t++) a.push(p[t] / p[t - 1] - 1); return a; }
+
+function renderExplore() {
+  const [i0, i1] = viewRange();
+  drawExpGrid(i0, i1);
+  drawExpPrice(i0, i1);
+  drawExpReturns(i0, i1);
+  drawExpResidual(i0, i1);
+  drawHeatmap(i0, i1);
+  drawExpBeta();
+  notesExplore();
+}
+function drawExpGrid(i0, i1) {
+  const cv = document.getElementById("c-exp-grid"); const { ctx, w: W, h: H } = fitCanvas(cv, 360); ctx.clearRect(0, 0, W, H);
+  const P = DATA.prices, N = P.length, cols = 9, rows = Math.ceil(N / cols);
+  const cw = W / cols, ch = H / rows; EXP_GRID = { cw, ch, cols, rows };
+  ctx.font = "9px system-ui"; ctx.textBaseline = "top";
+  for (let k = 0; k < N; k++) {
+    const cx = (k % cols) * cw, cy = Math.floor(k / cols) * ch;
+    const pad = 3, x0 = cx + pad, x1 = cx + cw - pad, y0 = cy + 14, y1 = cy + ch - pad;
+    let lo = Infinity, hi = -Infinity; for (let t = i0; t <= i1; t++) { lo = Math.min(lo, P[k][t]); hi = Math.max(hi, P[k][t]); }
+    const base = P[k][i0], ret = P[k][i1] / base - 1;
+    const col = k === state.inst ? cssVar("--ma-fast") : (ret >= 0 ? cssVar("--buy") : cssVar("--sell"));
+    ctx.strokeStyle = col; ctx.lineWidth = k === state.inst ? 2 : 1; ctx.beginPath();
+    for (let t = i0; t <= i1; t++) { const x = x0 + (t - i0) / (i1 - i0) * (x1 - x0); const y = y1 - (P[k][t] - lo) / ((hi - lo) || 1) * (y1 - y0); if (t === i0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.stroke();
+    ctx.fillStyle = k === state.inst ? cssVar("--ma-fast") : cssVar("--muted");
+    ctx.fillText(`${DATA.names[k]} ${ret >= 0 ? "+" : ""}${(ret * 100).toFixed(0)}%`, cx + pad, cy + 2);
+    if (k === 0) { ctx.fillStyle = cssVar("--price"); ctx.fillText("(index)", cx + pad + 44, cy + 2); }
+  }
+}
+function drawExpPrice(i0, i1) {
+  document.getElementById("exp-price-title").textContent = "Price · " + DATA.names[state.inst] + (state.inst === 0 ? " (ALGO = market index)" : "");
+  const cv = document.getElementById("c-exp-price"); const { ctx, w: W, h: H } = fitCanvas(cv, 200); ctx.clearRect(0, 0, W, H);
+  const p = DATA.prices[state.inst]; let lo = Infinity, hi = -Infinity;
+  for (let t = i0; t <= i1; t++) { lo = Math.min(lo, p[t]); hi = Math.max(hi, p[t]); }
+  const padv = (hi - lo) * 0.06 || 1; lo -= padv; hi += padv;
+  const xs = makeScale(i0, i1, PAD.l, W - PAD.r), ys = makeScale(lo, hi, PAD.t, H - PAD.b, true);
+  SCALES = { xs, i0, i1, W };
+  drawAxes(ctx, W, H, xs, ys, niceTicks(lo, hi, 5), [i0, i1]);
+  const arr = new Array(DATA.nDays).fill(NaN); for (let t = i0; t <= i1; t++) arr[t] = p[t];
+  polyline(ctx, arr, xs, ys, i0, i1, cssVar("--price"), 2);
+}
+function drawExpReturns(i0, i1) {
+  const cv = document.getElementById("c-exp-ret"); const { ctx, w: W, h: H } = fitCanvas(cv, 120); ctx.clearRect(0, 0, W, H);
+  const rr = retSeries(state.inst); let hi = 0; for (let t = i0; t <= i1; t++) if (isFinite(rr[t])) hi = Math.max(hi, Math.abs(rr[t]));
+  hi = hi || 0.01;
+  const xs = makeScale(i0, i1, PAD.l, W - PAD.r), ys = makeScale(-hi, hi, PAD.t, H - PAD.b, true);
+  drawAxes(ctx, W, H, xs, ys, niceTicks(-hi, hi, 4), [i0, i1], v => (v * 100).toFixed(1) + "%");
+  const yb = ys(0); const bw = Math.max(1, (xs(i1) - xs(i0)) / (i1 - i0) * 0.7);
+  for (let t = i0; t <= i1; t++) { if (!isFinite(rr[t])) continue; const x = xs(t), y = ys(rr[t]); ctx.fillStyle = rr[t] >= 0 ? cssVar("--buy") : cssVar("--sell"); ctx.fillRect(x - bw / 2, Math.min(y, yb), bw, Math.abs(y - yb) || 1); }
+  drawCrosshairV(ctx, xs, W, H);
+}
+function drawExpResidual(i0, i1) {
+  const cv = document.getElementById("c-exp-resid"); const { ctx, w: W, h: H } = fitCanvas(cv, 150); ctx.clearRect(0, 0, W, H);
+  const { beta, r0, r2 } = betasToALGO(); const k = state.inst;
+  const rk = retSeries(k);
+  const resid = new Array(DATA.nDays).fill(NaN); let cum = 0; resid[0] = 0;
+  for (let t = 1; t < DATA.nDays; t++) { cum += (rk[t] - beta[k] * r0[t - 1]); resid[t] = cum; }
+  let lo = Infinity, hi = -Infinity; for (let t = i0; t <= i1; t++) { lo = Math.min(lo, resid[t]); hi = Math.max(hi, resid[t]); }
+  const padv = (hi - lo) * 0.08 || 0.01; lo -= padv; hi += padv;
+  const xs = makeScale(i0, i1, PAD.l, W - PAD.r), ys = makeScale(lo, hi, PAD.t, H - PAD.b, true);
+  drawAxes(ctx, W, H, xs, ys, niceTicks(lo, hi, 4), [i0, i1], v => v.toFixed(2));
+  const yb = Math.round(ys(0)) + 0.5; ctx.strokeStyle = cssVar("--axis"); ctx.beginPath(); ctx.moveTo(PAD.l, yb); ctx.lineTo(W - PAD.r, yb); ctx.stroke();
+  polyline(ctx, resid, xs, ys, i0, i1, cssVar("--ma-slow"), 2);
+  drawCrosshairV(ctx, xs, W, H);
+  document.getElementById("exp-resid-cur").textContent = k === 0 ? "ALGO is the index (residual ≈ 0)" : `beta ${beta[k].toFixed(2)} · R² ${r2[k].toFixed(2)}`;
+}
+function drawHeatmap(i0, i1) {
+  const cv = document.getElementById("c-exp-corr"); const { ctx, w: W, h: H } = fitCanvas(cv, 420); ctx.clearRect(0, 0, W, H);
+  const P = DATA.prices, N = P.length;
+  // return matrix over window
+  const R = []; for (let k = 0; k < N; k++) { const a = []; for (let t = i0 + 1; t <= i1; t++) a.push(Math.log(P[k][t] / P[k][t - 1])); R.push(a); }
+  const mu = R.map(a => mean(a)), sd = R.map(a => { let v = 0; for (const x of a) v += (x - mean(a)) ** 2; return Math.sqrt(v / a.length); });
+  const g = 12, x0 = g, y0 = g, sz = Math.min(W - 2 * g, H - 2 * g), cell = sz / N;
+  const L = a => a.length;
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    let c;
+    if (i === j) c = 1;
+    else { let cov = 0; for (let t = 0; t < L(R[i]); t++) cov += (R[i][t] - mu[i]) * (R[j][t] - mu[j]); cov /= L(R[i]); c = (sd[i] > 1e-12 && sd[j] > 1e-12) ? cov / (sd[i] * sd[j]) : 0; }
+    ctx.fillStyle = divColor(c); ctx.fillRect(x0 + j * cell, y0 + i * cell, cell + 0.5, cell + 0.5);
+  }
+  // ALGO row/col outline (index 0)
+  ctx.strokeStyle = cssVar("--ink"); ctx.lineWidth = 1.5;
+  ctx.strokeRect(x0, y0, N * cell, cell); ctx.strokeRect(x0, y0, cell, N * cell);
+  ctx.fillStyle = cssVar("--muted"); ctx.font = "10px system-ui"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.fillText("row/col 0 = ALGO (index) — its column is every stock's market correlation", x0 + N * cell + 8, y0 + 20);
+  ctx.fillText("blue = positive corr, red = negative, white ≈ 0", x0 + N * cell + 8, y0 + 38);
+}
+function isDark() {
+  const t = document.documentElement.getAttribute("data-theme");
+  return t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+}
+function divColor(c) {   // diverging: blue = +corr, red = -corr, neutral ≈ surface
+  c = Math.max(-1, Math.min(1, c)); const a = Math.abs(c), d = isDark();
+  const neu = d ? [26, 26, 25] : [252, 252, 251];
+  const pole = c >= 0 ? (d ? [57, 135, 229] : [42, 120, 214]) : (d ? [230, 103, 103] : [208, 59, 59]);
+  const m = i => Math.round(neu[i] + (pole[i] - neu[i]) * a);
+  return `rgb(${m(0)},${m(1)},${m(2)})`;
+}
+function drawExpBeta() {
+  const cv = document.getElementById("c-exp-beta"); const { ctx, w: W, h: H } = fitCanvas(cv, 150); ctx.clearRect(0, 0, W, H);
+  const { beta } = betasToALGO(); const N = beta.length, x0 = PAD.l, x1 = W - PAD.r;
+  let lo = Math.min(0, ...beta.slice(1)), hi = Math.max(...beta.slice(1)); const padv = (hi - lo) * 0.1 || 0.1; lo -= padv; hi += padv;
+  const ys = makeScale(lo, hi, PAD.t, H - PAD.b, true);
+  ctx.strokeStyle = cssVar("--grid"); ctx.font = "11px system-ui"; ctx.textBaseline = "middle"; ctx.textAlign = "right";
+  for (const t of niceTicks(lo, hi, 4)) { const y = Math.round(ys(t)) + 0.5; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke(); ctx.fillStyle = cssVar("--muted"); ctx.fillText(t.toFixed(1), x0 - 6, y); ctx.strokeStyle = cssVar("--grid"); }
+  const yb = Math.round(ys(0)) + 0.5; ctx.strokeStyle = cssVar("--axis"); ctx.beginPath(); ctx.moveTo(x0, yb); ctx.lineTo(x1, yb); ctx.stroke();
+  const slot = (x1 - x0) / (N - 1), bw = Math.min(slot * 0.7, 10);
+  for (let k = 1; k < N; k++) { const cx = x0 + slot * (k - 0.5); const y = ys(beta[k]); ctx.fillStyle = k === state.inst ? cssVar("--ma-fast") : cssVar("--price"); ctx.fillRect(cx - bw / 2, Math.min(y, yb), bw, Math.abs(y - yb) || 1); }
+  ctx.fillStyle = cssVar("--muted"); ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText("each bar = one stock's beta to ALGO (all positive ⇒ one market factor)", (x0 + x1) / 2, H - PAD.b + 5);
+}
+
+// ---- Notes (auto-generated, shared thresholds with backtester insights) -----
+const NOTE = { turnoverHigh: 60000, sharpeWeak: 0.5, sharpeStrong: 1.5 };
+function setNotes(id, title, lines) {
+  document.getElementById(id).innerHTML = `<span class="h">${title}</span><ul>` + lines.map(l => `<li>${l}</li>`).join("") + `</ul>`;
+}
+function notesInstrument() {
+  const price = DATA.prices[state.inst], [i0, i1] = viewRange();
+  const { beta, r2 } = betasToALGO(); const k = state.inst;
+  const vol = rollVol(price, state.volw)[i1];
+  const pos = signalFor(state.inst, price);
+  const met = pos ? metricsFromRets(strategyRets(price, pos), i0, i1) : null;
+  const L = [];
+  if (k === 0) L.push("This is <b>ALGO — the market index</b> (equal-weight average of the other 50). Trading it is a pure market bet; it has the 10× position limit and 5× lower fee.");
+  else L.push(`Beta to ALGO <b>${beta[k].toFixed(2)}</b>, R² <b>${r2[k].toFixed(2)}</b> → ${r2[k] > 0.3 ? "fairly market-driven" : "mostly idiosyncratic"} (only ~${(r2[k] * 100).toFixed(0)}% explained by the market).`);
+  if (!isNaN(vol)) L.push(`Annualised vol <b>${(vol * 100).toFixed(0)}%</b>; current regime <b>${regimeLabel(price, i1)}</b>.`);
+  if (met) L.push(`Selected signal here: Sharpe <b>${met.sharpe.toFixed(2)}</b>, return <b>${fmtPct(met.total)}</b> over view${met.sharpe < NOTE.sharpeWeak ? " — weak on this name" : ""}.`);
+  L.push("Reminder: the edge is <b>cross-sectional</b> (relative value) — a single name's chart is mostly noise; the Portfolio/Signals tabs show the tradeable structure.");
+  setNotes("notes-instrument", "Notes — what this tells you", L);
+}
+function notesPortfolio() {
+  const [i0, i1] = viewRange(); const pf = computePortfolio(i0, i1); const met = metricsFromRets(pf.rets, i0, i1); const mkt = marketStats(i0, i1);
+  const L = [];
+  L.push(`Signal <b>${state.signal}</b>, equal-weight book: <b>Score ≈ ${scoreEst(met.mean, met.std).toFixed(0)}</b> (gross est.), Sharpe <b>${met.sharpe.toFixed(2)}</b>, Sortino ${met.sortino.toFixed(2)}, ann. return ${fmtPct1(met.annRet)}, max DD ${(met.maxdd * 100).toFixed(1)}%.`);
+  if (met.sharpe >= NOTE.sharpeStrong) L.push("✓ Strong risk-adjusted return (gross).");
+  else if (met.sharpe < NOTE.sharpeWeak) L.push("△ Weak Sharpe — the Score formula punishes low Sharpe hard.");
+  L.push(`Universe: avg pairwise corr <b>${mkt.avgCorr.toFixed(2)}</b>, avg ann. vol ${(mkt.avgVol * 100).toFixed(0)}%. Best ${mkt.best.name} ${fmtPct1(mkt.best.ret)}, worst ${mkt.worst.name} ${fmtPct1(mkt.worst.ret)}.`);
+  L.push("This panel is <b>gross of fees</b> and equal-weight. Official, fee-aware numbers: <code>backtester.py --stats</code>.");
+  setNotes("notes-portfolio", "Notes — what this tells you", L);
+}
+function notesSignals() {
+  const [s0, i1] = sigWindow(); const name = state.sigInspect; const rows = scoreMatrix(name, s0, i1);
+  let best = 1, bestic = -Infinity; for (const h of [1, 5, 10, 20]) { const ic = icDetail(rows, h).ic; if (ic > bestic) { bestic = ic; best = h; } }
+  const q = quantileReturns(name, 5, s0, i1); const spread = q[q.length - 1] - q[0];
+  const L = [];
+  L.push(`<b>${name}</b>: IC peaks at <b>${best}d</b> (${bestic >= 0 ? "+" : ""}${bestic.toFixed(3)}). ${bestic > 0.01 ? "Positive → a real reversion edge." : bestic < -0.01 ? "Negative → this predicts the wrong way; fade it." : "≈0 → little predictive power."}`);
+  L.push(`Quantile spread Q5−Q1 = <b>${(spread * 100).toFixed(2)}%</b> ${spread > 0 ? "(cheap names outperform → tradeable)" : "(inverted)"} over 5 days.`);
+  L.push("IC is necessarily tiny (~0.02–0.03) across 51 names — that's normal; size for robustness, judge on walk-forward, not one window.");
+  setNotes("notes-signals", "Notes — what this tells you", L);
+}
+function notesExplore() {
+  const { beta, r2 } = betasToALGO(); const k = state.inst, [i0, i1] = viewRange(); const mkt = marketStats(i0, i1);
+  const L = [];
+  L.push("<b>ALGO (instrument 0) is the market index</b> — the equal-weight average of the other 50 (corr ≈ 1.00). One market factor drives ~20–23% of every stock (all betas positive).");
+  L.push(k === 0 ? "You're viewing the index itself." : `Selected <b>${DATA.names[k]}</b>: beta ${beta[k].toFixed(2)}, R² ${r2[k].toFixed(2)} — its residual (below) is the idiosyncratic part you actually trade cross-sectionally.`);
+  L.push(`Avg pairwise correlation <b>${mkt.avgCorr.toFixed(2)}</b> — modest; the heatmap's blue wash is the shared market factor.`);
+  L.push("Residuals barely mean-revert (OU half-life ~80d, few cointegrate) → <b>pairs/cointegration stat-arb is weak</b>; the edge is short-horizon cross-sectional reversion. See DGP.md.");
+  setNotes("notes-explore", "Notes — reverse-engineering clues", L);
+}
+
+// ================= COMPARE VIEW =================
+const CMP_COLORS = ["#2a78d6", "#1baf7a", "#eb6834", "#4a3aa7", "#d03b3b", "#eda100", "#e87ba4", "#008300"];
+function renderCompare() {
+  const runs = DATA.runs;
+  const cv = document.getElementById("c-compare");
+  if (!runs || !runs.length) {
+    const { ctx, w: W, h: H } = fitCanvas(cv, 300); ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = cssVar("--muted"); ctx.font = "13px system-ui"; ctx.textAlign = "center";
+    ctx.fillText("No runs loaded — generate them first (see the note above).", W / 2, H / 2);
+    document.getElementById("compare-table").innerHTML = "";
+    document.getElementById("compare-legend").innerHTML = "";
+    setNotes("notes-compare", "Compare — no runs loaded", [
+      "This tab overlays each strategy config's <b>real, fee-aware</b> equity curve + metrics (not the gross approximation on the Portfolio tab).",
+      "Generate: <code>python backtester.py --export-runs runs.json</code>",
+      "Then rebuild: <code>python dashboard.py --runs runs.json</code> and reopen.",
+    ]);
+    return;
+  }
+  drawCompare(runs);
+  const sorted = [...runs].sort((a, b) => b.metrics.Score - a.metrics.Score);
+  const cols = ["Score", "Sharpe", "Sortino", "Calmar", "maxDD", "turnover"];
+  const fmtCell = (c, v) => c === "Score" ? `<span class="${v >= 0 ? 'pos' : 'neg'}">${v}</span>`
+    : (c === "maxDD" || c === "turnover") ? Number(v).toLocaleString() : v;
+  document.getElementById("compare-table").innerHTML =
+    `<tr><td class="k">config</td>` + cols.map(c => `<td class="v">${c}</td>`).join("") + `</tr>` +
+    sorted.map(r => `<tr><td class="k">${r.label}</td>` + cols.map(c => `<td class="v">${fmtCell(c, r.metrics[c])}</td>`).join("") + `</tr>`).join("");
+  const best = sorted[0];
+  setNotes("notes-compare", "Compare — what this tells you", [
+    `Best by Score: <b>${best.label}</b> (Score ${best.metrics.Score}, Sharpe ${best.metrics.Sharpe}, maxDD ${Number(best.metrics.maxDD).toLocaleString()}).`,
+    "These are the <b>real, fee- and limit-aware</b> curves from <code>backtester.py</code> — the numbers that match the grader (unlike the gross Portfolio tab).",
+    "Steeper = more PnL; smoother / shallower dips = better risk. Compare the depth of each curve's pullbacks from its running peak.",
+  ]);
+}
+function drawCompare(runs) {
+  const cv = document.getElementById("c-compare"); const { ctx, w: W, h: H } = fitCanvas(cv, 380); ctx.clearRect(0, 0, W, H);
+  let d0 = Infinity, d1 = -Infinity, lo = Infinity, hi = -Infinity;
+  for (const r of runs) { d0 = Math.min(d0, r.days[0]); d1 = Math.max(d1, r.days[r.days.length - 1]); for (const v of r.cum_pnl) { lo = Math.min(lo, v); hi = Math.max(hi, v); } }
+  const padv = (hi - lo) * 0.05 || 1; lo -= padv; hi += padv;
+  const xs = makeScale(d0, d1, PAD.l, W - PAD.r), ys = makeScale(lo, hi, PAD.t, H - PAD.b, true);
+  ctx.font = "11px system-ui"; ctx.textBaseline = "middle"; ctx.textAlign = "right";
+  for (const t of niceTicks(lo, hi, 6)) { const y = Math.round(ys(t)) + 0.5; ctx.strokeStyle = cssVar("--grid"); ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke(); ctx.fillStyle = cssVar("--muted"); ctx.fillText(fmtNum(t), PAD.l - 6, y); }
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (const t of niceTicks(d0, d1, 8).filter(t => t >= d0 && t <= d1)) { ctx.fillStyle = cssVar("--muted"); ctx.fillText("d" + Math.round(t), xs(t), H - PAD.b + 5); }
+  const yb = Math.round(ys(0)) + 0.5; ctx.strokeStyle = cssVar("--axis"); ctx.beginPath(); ctx.moveTo(PAD.l, yb); ctx.lineTo(W - PAD.r, yb); ctx.stroke();
+  runs.forEach((r, i) => {
+    ctx.strokeStyle = CMP_COLORS[i % CMP_COLORS.length]; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.beginPath();
+    for (let k = 0; k < r.days.length; k++) { const x = xs(r.days[k]), y = ys(r.cum_pnl[k]); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.stroke();
+  });
+  document.getElementById("compare-legend").innerHTML = runs.map((r, i) =>
+    `<span class="item"><span class="swatch" style="background:${CMP_COLORS[i % CMP_COLORS.length]}"></span>${r.label} <span style="color:var(--muted)">(${r.metrics.Score})</span></span>`).join("");
+}
+
+// ---- crosshair --------------------------------------------------------------
+function drawCrosshair(ctx, xs, ys, price, W, H, i0, i1) {
+  if (state.hover == null || state.hover < i0 || state.hover > i1) return;
+  const x = Math.round(xs(state.hover)) + 0.5;
+  ctx.strokeStyle = cssVar("--axis"); ctx.setLineDash([2, 2]); ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, H - PAD.b); ctx.stroke(); ctx.setLineDash([]);
+  const y = ys(price[state.hover]); ctx.fillStyle = cssVar("--price"); ctx.strokeStyle = cssVar("--surface"); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x, y, 4, 0, 7); ctx.fill(); ctx.stroke();
+}
+function drawCrosshairV(ctx, xs, W, H) {
+  if (state.hover == null || state.hover < SCALES.i0 || state.hover > SCALES.i1) return;
+  const x = Math.round(xs(state.hover)) + 0.5;
+  ctx.strokeStyle = cssVar("--axis"); ctx.setLineDash([2, 2]); ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, H - PAD.b); ctx.stroke(); ctx.setLineDash([]);
+}
+
+// ---- instrument tiles + legend ---------------------------------------------
+function updateInstTiles(price, vol, pos, sr, i0, i1) {
+  const last = price[i1]; const ret = price[i1] / price[i0] - 1; const curVol = vol[i1];
+  const met = sr ? metricsFromRets(sr, i0, i1) : null;
+  const trades = pos ? countTrades(pos, i0, i1) : 0;
+  const tiles = [
+    { k: "Last price", v: last.toFixed(2) },
+    { k: "Return (view)", v: fmtPct(ret), cls: ret >= 0 ? "pos" : "neg" },
+    { k: "Ann. volatility", v: isNaN(curVol) ? "—" : (curVol * 100).toFixed(1) + "%" },
+    { k: "Regime", v: regimeLabel(price, i1) },
+    { k: "Signal Score", v: met ? scoreEst(met.mean, met.std, DLR_LIMIT(state.inst)).toFixed(2) : "—", cls: met ? (met.mean > 0 ? "pos" : "neg") : "" },
+    { k: "Signal Sharpe", v: met ? met.sharpe.toFixed(2) : "—", cls: met ? (met.sharpe >= 0 ? "pos" : "neg") : "" },
+    { k: "Signal Sortino", v: met ? met.sortino.toFixed(2) : "—", cls: met ? (met.sortino >= 0 ? "pos" : "neg") : "" },
+    { k: "Signal return", v: met ? fmtPct(met.total) : "—", cls: met ? (met.total >= 0 ? "pos" : "neg") : "" },
+  ];
+  document.getElementById("tiles").innerHTML = tiles.map(t =>
+    `<div class="tile"><div class="k">${t.k}</div><div class="v ${t.cls || ""}">${t.v}</div></div>`).join("");
+}
+function regimeLabel(price, i) {
+  if (state.regime === "vol") { const v = rollVol(price, state.volw)[i]; if (isNaN(v)) return "—"; return v < state.rlo ? "Calm" : v > state.rhi ? "Turbulent" : "Normal"; }
+  if (state.regime === "trend") { const r = trendRegime(price, state.maf, state.mas)[i]; return r === 1 ? "Uptrend" : r === -1 ? "Downtrend" : "—"; }
+  return "—";
+}
+function updateLegend() {
+  const items = [["swatch", "--price", "Price"]];
+  if (state.bb) items.push(["swatch", "--band", "Bollinger"]);
+  if (state.ma) { items.push(["swatch", "--ma-fast", "MA " + state.maf]); items.push(["swatch", "--ma-slow", "MA " + state.mas]); }
+  let html = items.map(([c, v, l]) => `<span class="item"><span class="${c}" style="background:${cssVar(v)}"></span>${l}</span>`).join("");
+  if (state.signal !== "none") html += `<span class="item"><span class="tri up"></span>Buy</span><span class="item"><span class="tri down"></span>Sell</span>`;
+  if (state.regime === "vol") html += `<span class="item"><span class="swatch sq" style="background:${cssVar("--calm")}"></span>Calm</span><span class="item"><span class="swatch sq" style="background:${cssVar("--turbulent")}"></span>Turbulent</span>`;
+  else if (state.regime === "trend") html += `<span class="item"><span class="swatch sq" style="background:${cssVar("--up")}"></span>Up</span><span class="item"><span class="swatch sq" style="background:${cssVar("--down")}"></span>Down</span>`;
+  document.getElementById("legend").innerHTML = html;
+}
+
+// ---- tooltip ----------------------------------------------------------------
+let PF_BARS = [];
+let EXP_GRID = null;
+function showTooltip(clientX, clientY) {
+  const tt = document.getElementById("tooltip"); const i = state.hover; if (i == null) { tt.style.display = "none"; return; }
+  let html;
+  if (state.mode === "instrument") {
+    const price = DATA.prices[state.inst]; const bb = bollinger(price, state.bbw, state.bbk);
+    const vol = rollVol(price, state.volw)[i]; const pos = signalFor(state.inst, price);
+    const rows = [
+      ["Price", price[i].toFixed(2)],
+      state.bb && !isNaN(bb.mid[i]) ? ["BB mid", bb.mid[i].toFixed(2)] : null,
+      state.bb && !isNaN(bb.upper[i]) ? ["BB up/lo", bb.upper[i].toFixed(2) + " / " + bb.lower[i].toFixed(2)] : null,
+      !isNaN(vol) ? ["Ann. vol", (vol * 100).toFixed(1) + "%"] : null,
+      ["Regime", regimeLabel(price, i)],
+      pos ? ["Position", pos[i] > 0 ? "Long" : pos[i] < 0 ? "Short" : "Flat"] : null,
+    ].filter(Boolean);
+    html = `<div class="tt-day">Day ${i + 1} · ${DATA.names[state.inst]}</div>` +
+      rows.map(([l, v]) => `<div class="tt-row"><span class="lab">${l}</span><span class="num">${v}</span></div>`).join("");
+  } else {
+    html = `<div class="tt-day">Day ${i + 1}</div>`;
+  }
+  tt.innerHTML = html; tt.style.display = "block";
+  const pad = 14, w = tt.offsetWidth, h = tt.offsetHeight;
+  let x = clientX + pad, y = clientY + pad; if (x + w > innerWidth) x = clientX - w - pad; if (y + h > innerHeight) y = clientY - h - pad;
+  tt.style.left = x + "px"; tt.style.top = y + "px";
+}
+function showBarTooltip(clientX, clientY, bar) {
+  const tt = document.getElementById("tooltip");
+  tt.innerHTML = `<div class="tt-day">${bar.name}</div><div class="tt-row"><span class="lab">Signal return</span><span class="num">${fmtPct(bar.ret)}</span></div>`;
+  tt.style.display = "block"; const pad = 14, w = tt.offsetWidth, h = tt.offsetHeight;
+  let x = clientX + pad, y = clientY + pad; if (x + w > innerWidth) x = clientX - w - pad; if (y + h > innerHeight) y = clientY - h - pad;
+  tt.style.left = x + "px"; tt.style.top = y + "px";
+}
+function hideTooltip() { document.getElementById("tooltip").style.display = "none"; }
+
+// ---- hover wiring -----------------------------------------------------------
+function bindHover(cv, isContrib) {
+  cv.addEventListener("mousemove", e => {
+    const rect = cv.getBoundingClientRect(); const mx = e.clientX - rect.left;
+    if (isContrib) {
+      const bar = PF_BARS.find(b => mx >= b.x - 1 && mx <= b.x + b.w + 1);
+      if (bar) showBarTooltip(e.clientX, e.clientY, bar); else hideTooltip();
+      return;
+    }
+    const { xs, i0, i1, W } = SCALES; if (!xs) return;
+    if (mx < PAD.l || mx > W - PAD.r) { state.hover = null; hideTooltip(); render(); return; }
+    const frac = (mx - PAD.l) / ((W - PAD.r) - PAD.l);
+    state.hover = Math.max(i0, Math.min(i1, Math.round(i0 + frac * (i1 - i0))));
+    render(); showTooltip(e.clientX, e.clientY);
+  });
+  cv.addEventListener("mouseleave", () => { if (isContrib) { hideTooltip(); return; } state.hover = null; hideTooltip(); render(); });
+}
+
+// ---- init -------------------------------------------------------------------
+function init() {
+  document.getElementById("hdr-sub").textContent =
+    `${DATA.names.length} instruments · ${DATA.nDays} days` + (DATA.positions ? " · positions loaded" : "");
+  const sel = document.getElementById("inst");
+  sel.innerHTML = DATA.names.map((n, i) => `<option value="${i}">${i}. ${n}</option>`).join("");
+  sel.onchange = () => { state.inst = +sel.value; document.getElementById("price-title").textContent = "Price · " + DATA.names[state.inst]; render(); };
+  document.getElementById("price-title").textContent = "Price · " + DATA.names[0];
+
+  if (!DATA.positions) { const opt = document.querySelector('#signal option[value="loaded"]'); opt.disabled = true; opt.textContent = "Loaded positions (none)"; }
+  else { state.signal = "loaded"; const s = document.getElementById("signal"); if (s) s.value = "loaded"; }  // show the real book's entries/exits by default
+  // add the real strategy signals (the SIGNALS catalog) to the entries/exits dropdown
+  const sigDropdown = document.getElementById("signal");
+  const og = document.createElement("optgroup");
+  og.label = "Strategy signals (cross-sectional)";
+  og.innerHTML = SIG_LIST.map(n => `<option value="cat:${n}">${n}</option>`).join("");
+  sigDropdown.appendChild(og);
+  // per-strategy real books (from export_books.py) — each with its own entries/exits
+  if (DATA.books && DATA.books.length) {
+    const bg = document.createElement("optgroup");
+    bg.label = "Strategy books — real entries/exits";
+    bg.innerHTML = DATA.books.map((b, i) => `<option value="book:${i}">${b.label}</option>`).join("");
+    sigDropdown.insertBefore(bg, sigDropdown.firstChild);   // top of the list
+    state.signal = "book:0";
+    sigDropdown.value = "book:0";
+    const opt = document.querySelector('#signal option[value="loaded"]');
+    if (opt) { opt.disabled = true; opt.textContent = "Loaded positions (use a Strategy book above)"; }
+  }
+  const sigNotes = {
+    none: "No signal — chart the raw price and overlays only.",
+    bbrev: "Long when price closes below the lower band, short above the upper; exit back at the mean.",
+    macross: "Long while fast MA > slow MA, short otherwise. A trend follower.",
+    zrev: "Long when the price z-score < −threshold, short when > +threshold; exit at the mean.",
+    loaded: "Entries/exits from your exported position matrix (sign per day).",
+  };
+  const updNote = () => document.getElementById("sig-note").textContent =
+    state.signal.startsWith("cat:")
+      ? `Real strategy signal '${state.signal.slice(4)}': this name's position = sign of its demeaned cross-sectional score each day (the actual book is in the Portfolio tab).`
+      : state.signal.startsWith("book:")
+      ? `Exported book '${(DATA.books[+state.signal.slice(5)] || {}).label || ""}': ▲/▼ mark the days this book's position for this instrument flips long/short/flat; the panel below shows its real $ size (shares × price).`
+      : (sigNotes[state.signal] || "");
+
+  const bind = (id, key, fmt, isFloat) => {
+    const el = document.getElementById(id), num = document.getElementById(id + "-n");
+    const parse = v => isFloat ? parseFloat(v) : parseInt(v);
+    const apply = (v, src) => {
+      if (isNaN(v)) return;
+      state[key] = v;
+      if (src !== "range") el.value = v;
+      if (src !== "num" && num) num.value = fmt ? fmt(v) : v;
+      MKT_CACHE = {}; render();
+    };
+    el.addEventListener("input", () => apply(parse(el.value), "range"));
+    if (num) num.addEventListener("input", () => apply(parse(num.value), "num"));
+  };
+  bind("bbw", "bbw"); bind("bbk", "bbk", v => v.toFixed(1), true);
+  bind("maf", "maf"); bind("mas", "mas");
+  bind("volw", "volw"); bind("rlo", "rlo", v => v.toFixed(2), true); bind("rhi", "rhi", v => v.toFixed(2), true);
+  bind("zth", "zth", v => v.toFixed(1), true);
+  document.getElementById("t-bb").onchange = e => { state.bb = e.target.checked; render(); };
+  document.getElementById("t-ma").onchange = e => { state.ma = e.target.checked; render(); };
+  document.getElementById("regime").onchange = e => { state.regime = e.target.value; render(); };
+  document.getElementById("signal").onchange = e => { state.signal = e.target.value; updNote(); render(); };
+  updNote();
+
+  document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => {
+    document.querySelectorAll("[data-view]").forEach(x => x.classList.remove("active")); b.classList.add("active");
+    state.view = b.dataset.view === "all" ? "all" : parseInt(b.dataset.view); state.hover = null; render();
+  });
+  document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => {
+    document.querySelectorAll("[data-mode]").forEach(x => x.classList.remove("active")); b.classList.add("active");
+    state.mode = b.dataset.mode; state.hover = null;
+    // overlays/regime only affect the price panel; the entries-exits signal card
+    // is irrelevant on the Signals (diagnostics) tab.
+    const notInst = state.mode !== "instrument";
+    document.getElementById("card-overlays").classList.toggle("hidden", notInst);
+    document.getElementById("card-regime").classList.toggle("hidden", notInst);
+    document.getElementById("card-signal").classList.toggle("hidden", state.mode === "signals" || state.mode === "explore" || state.mode === "compare");
+    render();
+  });
+
+  // click a panel in the Explore grid to inspect that instrument
+  document.getElementById("c-exp-grid").addEventListener("click", e => {
+    if (!EXP_GRID) return;
+    const cv = e.currentTarget, rect = cv.getBoundingClientRect();
+    const col = Math.floor((e.clientX - rect.left) / EXP_GRID.cw);
+    const row = Math.floor((e.clientY - rect.top) / EXP_GRID.ch);
+    const k = row * EXP_GRID.cols + col;
+    if (k >= 0 && k < DATA.names.length) {
+      state.inst = k; document.getElementById("inst").value = k; render();
+    }
+  });
+
+  const sigSel = document.getElementById("sig-inspect");
+  sigSel.innerHTML = SIG_LIST.map(n => `<option value="${n}"${n === state.sigInspect ? " selected" : ""}>${n}</option>`).join("");
+  sigSel.onchange = () => { state.sigInspect = sigSel.value; render(); };
+
+  document.getElementById("theme-btn").onclick = () => {
+    const cur = document.documentElement.getAttribute("data-theme");
+    const next = cur === "dark" ? "light" : cur === "light" ? "dark" : (matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", next); render();
+  };
+
+  ["c-price", "c-inst-pos", "c-vol", "c-eq", "c-pf-eq", "c-pf-norm"].forEach(id => bindHover(document.getElementById(id), false));
+  bindHover(document.getElementById("c-pf-contrib"), true);
+  window.addEventListener("resize", render);
+  render();
+}
+init();
+</script>
+</body>
+</html>

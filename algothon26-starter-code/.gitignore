@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+scratch_*.py
+
+# generated backtester / dashboard outputs (regenerable from prices.txt)
+*.png
+*.csv
+dashboard.html
+
+# keep the price data and source; do NOT ignore prices.txt
+!prices.txt
+
+# generated compare-runs
+runs.json
