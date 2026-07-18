@@ -1,5 +1,11 @@
 """
-==================  SAFE_llalgo.py — LEAD-LAG-DRIVEN ALGO LEG  ==================
+############################################################################################
+###   SAFE_llalgo.py   ·   ALGO GATE = STOCK  #  COUNT SKEW   ·   MAX sizing (full $100k) ###
+############################################################################################
+  >>> THIS IS THE **COUNT** SIBLING. gate reads a NAME COUNT (|frac|>=0.12 = 28 vs 22).  <<<
+  >>> its twin SAFE_lldollar.py reads a $ AMOUNT (net$ book skew >= $50k).                <<<
+  Both are the SAME edge & SAME score (696 graded / 6.06 Sharpe); only the gate UNIT differs.
+
 Copy of SAFE.py. ONLY the ALGO (index, instrument 0) leg is changed: instead of
 fading ALGO's 30-day move (reversion), it is driven PRIMARILY by the lead-lag
 signal, expressed as the cross-sectional long/short imbalance of the idio book
