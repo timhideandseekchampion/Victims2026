@@ -5,7 +5,7 @@ DATA = json.load(open("positions_data.json"))
 
 HTML = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAFE vs SWING — entries & exits review</title>
+<title>SAFE vs QUAL vs SWING vs LL-GATE — entries & exits review</title>
 <style>
 :root{
   --bg:#fbfbfa; --surface:#fff; --ink:#1a1a1a; --ink2:#5a5f66; --muted:#9aa0a6;
@@ -50,12 +50,12 @@ canvas{display:block;width:100%}
 select{background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:7px;padding:6px 9px;font-size:13px}
 .sortbtn{background:var(--surface);border:1px solid var(--border);color:var(--ink2);border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer}
 </style></head><body><div class="wrap">
-<h1>SAFE vs SWING — entries &amp; exits, all 51 assets · 750 days</h1>
+<h1>SAFE vs QUAL vs SWING — entries &amp; exits, all 51 assets · 750 days</h1>
 <p class="sub">Green band = book is <b>long</b> that asset · red band = <b>short</b>. Triangles mark each entry (position flip). Positions re-decide daily and flip often (~every 2 days), so zoom in (drag on the price chart) to see individual ▲/▼. Bottom strip = cumulative PnL for that asset.</p>
 
 <div class="bar">
   <div class="seg" id="stratseg">
-    <button data-s="SAFE" class="on">SAFE</button><button data-s="SWING">SWING</button>
+    <button data-s="SAFE" class="on">SAFE</button><button data-s="QUAL">QUAL</button><button data-s="SWING">SWING</button><button data-s="LLGATE">LL-GATE</button>
   </div>
   <label>Asset <select id="assetsel"></select></label>
   <button class="sortbtn" id="resetzoom">Reset zoom</button>
@@ -77,6 +77,16 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--border)
   <canvas id="pnl" height="120"></canvas>
 </div>
 <p class="hint">Drag left→right on the price chart to zoom a date range · click a mini-chart below to switch asset.</p>
+
+<div class="detailhead" style="margin-top:26px">
+  <span class="nm">ALGO index — lead-lag skew gate <span style="color:var(--ink2);font-weight:400">(the LL-GATE book's index leg)</span></span>
+  <span class="stat" id="skewstat"></span>
+</div>
+<div class="card"><canvas id="skew" height="240"></canvas></div>
+<p class="hint">Each day we count how the 50 peers lean: <b>frac = (nLong − 25)/25</b>. When the skew clears the
+<b>±<span id="gatelbl"></span> gate</b> (shaded), the ALGO leg slams the full $100k <b class="pos">long</b> (green ▲, ≥28 of 50 long)
+or <b class="neg">short</b> (red ▼, ≥28 short); inside the gray band it falls back to fading the 30-day move.
+A <b>ringed</b> marker = the gate <b>overrode</b> reversion (opposite sign) — about half of triggers. Hover for the day's count &amp; decision.</p>
 
 <div class="detailhead" style="margin-top:22px">
   <span class="nm">Do winners &amp; losers persist? — 1st-half vs 2nd-half PnL per asset</span>
@@ -216,6 +226,43 @@ function renderPersist(){
   document.getElementById('pcap').innerHTML=`${strat} · corr(1st,2nd) = <b>${r.toFixed(2)}</b> (≈0 ⇒ no persistence) · lost <b>both</b> halves: <b>${both}/50</b>`;
 }
 
+// ---- ALGO lead-lag skew-gate panel -------------------------------------------
+const SK=DATA.algo_skew, GATE=SK.gate, NP=SK.nInst-1;   // NP peers (50)
+function renderSkew(){
+  const cv=document.getElementById('skew'),[c,W,H]=dpi(cv,240);
+  const pad={l:54,r:16,t:14,b:24};
+  let lim=GATE;for(let d=0;d<NT;d++)lim=Math.max(lim,Math.abs(SK.frac[d]));lim*=1.12;
+  const xs=d=>pad.l+d/(NT-1)*(W-pad.l-pad.r), ys=v=>pad.t+(lim-v)/(2*lim)*(H-pad.t-pad.b);
+  c.clearRect(0,0,W,H);
+  // gate zones (|frac|>=GATE => trigger)
+  c.fillStyle=css('--longband');c.fillRect(pad.l,pad.t,W-pad.l-pad.r,ys(GATE)-pad.t);
+  c.fillStyle=css('--shortband');c.fillRect(pad.l,ys(-GATE),W-pad.l-pad.r,(H-pad.b)-ys(-GATE));
+  // grid + y labels (in frac and in "names leaning")
+  c.strokeStyle=css('--grid');c.fillStyle=css('--muted');c.font="11px sans-serif";c.lineWidth=1;c.textAlign="right";
+  for(const v of [-GATE,0,GATE]){const y=ys(v);c.strokeStyle=v===0?css('--border'):css('--muted');
+    c.setLineDash(v===0?[]:[4,3]);c.beginPath();c.moveTo(pad.l,y);c.lineTo(W-pad.r,y);c.stroke();c.setLineDash([]);
+    const nm=Math.round(25+v*25);c.fillText(v.toFixed(2)+(v?`  (${nm}/50)`:'  (25/25)'),pad.l-6,y+3);}
+  c.textAlign="center";for(const d of niceDayTicks(0,NT-1))c.fillText(d,xs(d),H-6);
+  // frac line
+  c.strokeStyle=css('--ink');c.lineWidth=1.3;c.beginPath();let started=false;
+  for(let d=131;d<NT;d++){const X=xs(d),Y=ys(SK.frac[d]);started?c.lineTo(X,Y):(c.moveTo(X,Y),started=true);}c.stroke();
+  // trigger markers
+  let nOn=0,nLong=0,nFlip=0;
+  for(let d=131;d<NT;d++){const fr=SK.frac[d];if(Math.abs(fr)<GATE)continue;
+    nOn++;const up=fr>0;if(up)nLong++;const flip=SK.rev_dir[d]!==0&&Math.sign(fr)!==SK.rev_dir[d];if(flip)nFlip++;
+    const X=xs(d),Y=ys(fr);c.fillStyle=up?css('--long'):css('--short');c.beginPath();
+    if(up){c.moveTo(X,Y-6);c.lineTo(X-4,Y+1);c.lineTo(X+4,Y+1);}else{c.moveTo(X,Y+6);c.lineTo(X-4,Y-1);c.lineTo(X+4,Y-1);}
+    c.closePath();c.fill();
+    if(flip){c.lineWidth=1.4;c.strokeStyle=css('--ink');c.beginPath();c.arc(X,Y,5.5,0,7);c.stroke();}}
+  cv._xs=xs;cv._ys=ys;cv._lim=lim;
+  document.getElementById('gatelbl').textContent=GATE.toFixed(2);
+  const days=NT-131;
+  document.getElementById('skewstat').innerHTML=
+    `fires <b>${nOn}</b>/${days} days (<b>${(100*nOn/days).toFixed(0)}%</b>) · `+
+    `<b class="pos">${nLong}</b> long / <b class="neg">${nOn-nLong}</b> short · `+
+    `overrides reversion <b>${nFlip}</b> (${(100*nFlip/Math.max(1,nOn)).toFixed(0)}%)`;
+}
+
 // hover tooltip on price chart
 const tip=document.getElementById('tip');
 function hover(cv,kind){cv.addEventListener('mousemove',e=>{const r=cv.getBoundingClientRect(),xs=cv._xs,pad=cv._pad;if(!xs)return;
@@ -225,6 +272,15 @@ function hover(cv,kind){cv.addEventListener('mousemove',e=>{const r=cv.getBoundi
   tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY+14)+'px';tip.style.opacity=1;});
   cv.addEventListener('mouseleave',()=>tip.style.opacity=0);}
 hover(document.getElementById('price'));hover(document.getElementById('pnl'));
+// skew-panel hover: report the day's peer lean & gate decision
+(function(){const cv=document.getElementById('skew');cv.addEventListener('mousemove',e=>{const xs=cv._xs;if(!xs)return;
+  const r=cv.getBoundingClientRect(),mx=e.clientX-r.left;let d=Math.round((mx-54)/((cv.clientWidth-70))*(NT-1));d=Math.max(131,Math.min(NT-1,d));
+  const fr=SK.frac[d],nl=Math.round(25+fr*25),on=Math.abs(fr)>=GATE;
+  const dir=on?(fr>0?'<b style="color:'+css('--long')+'">LONG $100k</b>':'<b style="color:'+css('--short')+'">SHORT $100k</b>'):'reversion (fade 30d)';
+  const rd=SK.rev_dir[d],flip=on&&rd!==0&&Math.sign(fr)!==rd;
+  tip.innerHTML=`day ${d} · <b>${nl}/50</b> long (frac ${fr.toFixed(2)})<br>ALGO leg: ${dir}${flip?' <span style="color:'+css('--muted')+'">·overrides reversion</span>':''}`;
+  tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY+14)+'px';tip.style.opacity=1;});
+  cv.addEventListener('mouseleave',()=>tip.style.opacity=0);})();
 // scatter hover (nearest point)
 (function(){const cv=document.getElementById('persist');cv.addEventListener('mousemove',e=>{const pts=cv._pts;if(!pts)return;
   const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;let best=null,bd=1e9;
@@ -248,8 +304,8 @@ const sel=document.getElementById('assetsel');DATA.names.forEach((n,i)=>{const o
 sel.addEventListener('change',()=>{asset=+sel.value;x0=0;x1=NT-1;renderDetail();markSel();});
 document.getElementById('resetzoom').addEventListener('click',()=>{x0=0;x1=NT-1;renderDetail();});
 document.getElementById('sortbtn').addEventListener('click',e=>{sortMode=sortMode==='pnl'?'idx':'pnl';e.target.textContent=sortMode==='pnl'?'sort: PnL ▼':'sort: ticker';renderGrid();});
-window.addEventListener('resize',()=>{renderDetail();renderPersist();renderGrid();});
-renderDetail();renderPersist();renderGrid();
+window.addEventListener('resize',()=>{renderDetail();renderSkew();renderPersist();renderGrid();});
+renderDetail();renderSkew();renderPersist();renderGrid();
 </script></body></html>"""
 
 html = HTML.replace("__DATA__", json.dumps(DATA, separators=(",", ":")))

@@ -1,52 +1,34 @@
 """
-========================  SAFE.py — THE QUALIFIER BOOK  ========================
-USE THIS FOR EVERY QUALIFIER (goal = make top-10 / make finals consistently).
-Lowest downside, highest floor, hedged. Verified eval.py Score 610.55 on days 500-750,
-and the most consistent across all windows (floor ~495, std ~66). Ship this unless you
-specifically need to CATCH UP to a podium spot — then use SWING.py.
-  config: HL-ensemble(250/500/1000/2000), RIDGE_A=0.1, BLEND=0.30, HEDGE=True.
-================================================================================
+=========================  QUAL.py — THE FINAL / CATCH-UP BOOK  =========================
+USE THIS FOR THE FINAL (days 1500-2000), or the 1000-1500 qualifier ONLY if you need to
+maximise expected score to catch a podium — NOT to merely clear the top-10 bar (use SAFE for
+that; it has the higher floor). Higher true MEAN than SAFE with the ensemble's low variance;
+better floor + lower variance than SWING. This is the highest-EV robust book for a LONG
+(250d/500d) grading window, where score converges to the config's true mean.
+  config: HL-ensemble(250/500/1000/2000), RIDGE_A=0.1, BLEND=0.20, CONTRA_DOL=1M, HEDGE=False.
 
-Algothon 2026 — Arbitrage Victims, PART-2 ENSEMBLE book (tuned on the days 400-750 hunt).
+WHY 0.20 (validated this session, see DECISION.md):
+  Over 500-day windows (the 1000-1500 / 1500-2000 grade length) score ~= true mean PnL because
+  day-to-day variance washes out. Ranked by mean on 500d windows: b.20=618 > SWING(hl1000,b.15)=613
+  > SAFE(b.30)=600, and b.20 also has the best floor of that group (517). BLEND=0.20 sits on the
+  same flat plateau as SAFE(0.30)/SWING(0.15) — not a fragile peak. The ONE caveat: on a
+  lead-lag-WEAK draw (like the 500-750 leg) the heavier-blend SAFE(b.30) wins (613 vs 549), which
+  is why SAFE remains the pick when the objective is floor/survival rather than mean.
 
-Self-contained (numpy only). getMyPosition(prcSoFar) -> integer share targets.
-
-WHAT THIS IS, HONESTLY
-----------------------
-An exhaustive causal (no-look-ahead) search of 5,760 configs (`push700.py`) established that
-the MAXIMUM score extractable from the graded leg (last 250 days = days 500-750) by ANY
-strategy in a wide grid is ~605 — 700-800 is NOT reachable on that specific window without
-look-ahead; it is a hard fact of the window's realizable PnL, not a strategy deficiency (the
-same book scores 800-880 on days 400-500 — 500-750 is simply a harder draw).
-
-This config sits ESSENTIALLY AT that ceiling on the leg (604) and, crucially, is the most
-robust config across the whole file — validated on every rolling 250-day window
-(`finalize.py`): mean 637, worst 513, and 7 of 17 windows >= 700. So on a FRESH graded draw
-(finals = a new re-draw), the honest expectation is ~640 with a real ~40% chance of 700+ and
-a ~510 floor. That is how you get a 700-800: ship the strongest robust book and draw a good
-window — NOT by fitting the current leg harder (capped at 605).
-
-Improvement over the prior combinedv3 ship: on the 500-750 leg 503 -> 604, and
-mean-across-windows 620 -> 637. The gain is legitimate sizing, not overfitting:
-  * trade ALL 50 names (no conviction gate) at full $10k each -> deploy the full $500k idio
-    gross (breadth = Sharpe); the gate was leaving capital on the table on this data,
-  * blend 30% cross-sectional reversion into the lead-lag forecast (orthogonal diversifier),
-  * pin the ALGO index leg to its full $100k cap (fade the 30-day move),
-  * beta-hedge residual index exposure last.
+Everything else is identical to SAFE.py. Self-contained (numpy only).
+========================================================================================
 """
 import numpy as np
 
-# ------------------------------------------------------------------ knobs (search winner)
+# ------------------------------------------------------------------ knobs
 HALF_LIVES  = (250, 500, 1000, 2000)  # ENSEMBLE of memories -> lower estimation variance, higher floor
 RIDGE_A     = 0.1       # L2 on the 51->50 coefficient matrix
-BLEND       = 0.3      # weight on cross-sectional reversion mixed into the forecast
+BLEND       = 0.20      # reversion weight: 0.20 maximises across-(long)-window MEAN (vs SAFE's 0.30 floor pick)
 REV_W       = 10        # reversion lookback (days)
-CONTRA_DOL  = 1_000_000 # ALGO fade notional (pins the $100k cap at full conviction)
+CONTRA_DOL  = 1_000_000 # ALGO fade notional (pins the $100k cap; validated: 1M > 500k on mean AND floor AND the leg)
 CONTRA_K    = 30        # ALGO move lookback we fade
 CONTRA_WZ   = 60        # window to z-score that move
-HEDGE       = False     # OFF: fade pins the $100k cap 83% of days so the hedge applied ~$0 (median)
-                        # and was marginally negative on recent data (hedge_check.py). Demean already
-                        # ~beta-neutralizes (betas all ~1). Off = simpler + ~+2.4 on the graded leg.
+HEDGE       = False     # OFF: fade pins the $100k cap so the hedge gets ~$0 room (see DECISION.md note)
 WARMUP      = 96        # need enough history for the ridge
 
 _DLR = None             # per-instrument dollar limits, lazily sized to nInst

@@ -1,7 +1,7 @@
 """Compute per-asset daily positions for SAFE and SWING over all 750 days, derive entry/exit
 events (sign flips), and export a compact JSON for the dashboard."""
 import json, numpy as np, pandas as pd
-import SAFE, SWING
+import SAFE, SWING, QUAL, SAFE_llalgo
 
 prc = pd.read_csv("prices.txt", sep=r"\s+", header=0)
 names = list(prc.columns)
@@ -25,10 +25,41 @@ def per_asset_pnl(pos):
         pnl[:, d] = pnl[:, d - 1] + mkt - fee
     return pnl
 
+def algo_skew():
+    """per-day ALGO lead-lag gate diagnostics: frac = mean(sign(wz)) (the skew that drives the
+    gated ALGO leg) and the direction the reversion leg would take. Mirrors SAFE_llalgo exactly."""
+    logp = np.log(P); ENS = [250, 500, 1000, 2000]
+    frac = np.zeros(nt); rev_dir = np.zeros(nt)
+    for t in range(131, nt + 1):
+        lp = logp[:, :t]; r = lp[:, 1:] - lp[:, :-1]
+        X = r[:, :-1].T; Y = r[1:, 1:].T; xin = r[:, -1]; n = X.shape[0]
+        fs = []
+        for hl in ENS:
+            lam = 0.5**(1/hl); w = lam**np.arange(n-1, -1, -1); sw = w.sum()
+            mx = (w[:, None]*X).sum(0)/sw; my = (w[:, None]*Y).sum(0)/sw
+            Xc = X-mx; Yc = Y-my
+            eps = 1e-8*np.trace(Xc.T@(w[:, None]*Xc))/X.shape[1]
+            B = np.linalg.solve(Xc.T@(w[:, None]*Xc)+(eps+0.1)*np.eye(nInst), Xc.T@(w[:, None]*Yc))
+            f = my+(xin-mx)@B; d = f-f.mean(); fs.append(d/(d.std()+1e-12))
+        wz = np.mean(fs, 0)
+        rr = logp[1:, t-1]-logp[1:, t-1-10]; rr = rr-rr.mean(); rv = -rr/(rr.std()+1e-12)
+        wz = 0.7*wz + 0.3*rv
+        frac[t-1] = float(np.mean(np.sign(wz)))
+        lpA = logp[0, :t]; mv = lpA[30:]-lpA[:-30]
+        z = (mv[-1]-mv[-60:].mean())/(mv[-60:].std()+1e-12)
+        rev_dir[t-1] = float(-np.sign(np.clip(z, -3, 3)))
+    return frac, rev_dir
+
+print("computing ALGO skew-gate diagnostics ...")
+_frac, _revdir = algo_skew()
+
 out = {"names": names, "nt": nt,
        "prices": [[round(float(x), 2) for x in P[i]] for i in range(nInst)],
-       "algo_idx": 0}
-for label, mod in [("SAFE", SAFE), ("SWING", SWING)]:
+       "algo_idx": 0,
+       "algo_skew": {"frac": [round(float(x), 3) for x in _frac],
+                     "rev_dir": [int(x) for x in _revdir],
+                     "gate": SAFE_llalgo.ALGO_LL_GATE, "nInst": nInst}}
+for label, mod in [("SAFE", SAFE), ("SWING", SWING), ("QUAL", QUAL), ("LLGATE", SAFE_llalgo)]:
     print("computing", label, "...")
     pos = positions(mod)
     sign = np.sign(pos).astype(int)                       # -1 short, 0 flat, +1 long
