@@ -55,7 +55,7 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--border)
 
 <div class="bar">
   <div class="seg" id="stratseg">
-    <button data-s="SAFE" class="on">SAFE</button><button data-s="QUAL">QUAL</button><button data-s="SWING">SWING</button><button data-s="LLGATE">LL-GATE</button>
+    <button data-s="SAFE" class="on">SAFE</button><button data-s="QUAL">QUAL</button><button data-s="SWING">SWING</button><button data-s="LLGATE">LL-GATE</button><button data-s="LIVE">LIVE&nbsp;(rotate)</button>
   </div>
   <label>Asset <select id="assetsel"></select></label>
   <button class="sortbtn" id="resetzoom">Reset zoom</button>

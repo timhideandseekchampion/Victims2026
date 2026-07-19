@@ -1,7 +1,7 @@
 """Compute per-asset daily positions for SAFE and SWING over all 750 days, derive entry/exit
 events (sign flips), and export a compact JSON for the dashboard."""
 import json, numpy as np, pandas as pd
-import SAFE, SWING, QUAL, SAFE_llalgo
+import SAFE, SWING, QUAL, SAFE_llalgo, SAFE_live
 
 prc = pd.read_csv("prices.txt", sep=r"\s+", header=0)
 names = list(prc.columns)
@@ -59,7 +59,8 @@ out = {"names": names, "nt": nt,
        "algo_skew": {"frac": [round(float(x), 3) for x in _frac],
                      "rev_dir": [int(x) for x in _revdir],
                      "gate": SAFE_llalgo.ALGO_LL_GATE, "nInst": nInst}}
-for label, mod in [("SAFE", SAFE), ("SWING", SWING), ("QUAL", QUAL), ("LLGATE", SAFE_llalgo)]:
+for label, mod in [("SAFE", SAFE), ("SWING", SWING), ("QUAL", QUAL), ("LLGATE", SAFE_llalgo),
+                   ("LIVE", SAFE_live)]:
     print("computing", label, "...")
     pos = positions(mod)
     sign = np.sign(pos).astype(int)                       # -1 short, 0 flat, +1 long
