@@ -36,11 +36,13 @@ CONTRA_WZ   = 60
 WARMUP      = 96
 ALGO_LL_DOLLAR = 50_000
 
-# ---- rotation knobs (Balanced preset) ----------------------------------------
-ROT_W      = 40
-ROT_TCRIT  = 2.5
-ROT_MARGIN = 0.0
-ROT_P      = 7
+# ---- rotation knobs (ADOPTED pnl-W60 gate; verify-pnl-gate workflow) ----------
+GATE_MODE  = "pnl"   # "ic" | "pnl" (adopted) | "sharpe"
+ROT_W      = 60
+ROT_TCRIT  = 2.5     # (ic mode only)
+ROT_MARGIN = 0.0     # (ic mode only)
+PNL_MARGIN = 0.0     # (pnl/sharpe) required trailing book-return edge over champion
+ROT_P      = 5
 ROT_BONF   = True
 
 # ---- momentum challengers ------------------------------------------------------
@@ -67,9 +69,9 @@ XSAC_P     = 5
 ROT_P_FAST = 3
 
 # windowed cache: everything the gates read lies within this trailing span
-#   _choose: ROT_P + ROT_W - 1 = 46   _kill: KILL_P + ROT_W - 1 = 49
-#   _xsac_flag: XSAC_P + XSAC_W = 45  (RET-only, no forecasts)
-LOOKBACK   = ROT_W + max(KILL_P, ROT_P) + 6          # = 56, covers all of the above
+#   pnl gate: ROT_P + ROT_W - 1 = 64   _kill: KILL_P + ROT_W - 1 = 69 (deepest)
+#   _xsac_flag: XSAC_P + XSAC_W = 45  (RET-only)
+LOOKBACK   = ROT_W + max(KILL_P, ROT_P) + 6          # = 76, covers all of the above (deepest 69, margin 7)
 PRUNE_PAD  = 10                                      # keep a small margin beyond LOOKBACK
 
 _DLR = None
@@ -78,6 +80,7 @@ _RET = {}            # n -> realized demeaned idio return over day n (sliding wi
 _ICD = {}            # (name, n) -> realized daily IC  (floats; kept, they are tiny)
 _AZ  = {}            # s -> index trend z from the first s columns
 _XC  = {}            # n -> cross-sectional lag-1 autocorr corr(_RET[n-1], _RET[n])
+_PN  = {}            # (name, n) -> daily as-if-traded book-return proxy (sign(forecast) . realized ret)
 
 
 def _limits(nInst):
@@ -157,6 +160,9 @@ def _ensure_cache(P):
     for d in (_SIG, _RET, _XC):
         for k in [k for k in d if k < cut]:
             del d[k]
+    for k in [k for (nm, k) in _PN if k < cut]:               # prune _PN (keyed by (name, day))
+        for nm in ("champ",) + CHALLENGERS:
+            _PN.pop((nm, k), None)
 
 
 def _ic1(name, n):
@@ -172,6 +178,17 @@ def _ic1(name, n):
 
 def _ic(name, lo, hi):
     return np.array([_ic1(name, n) for n in range(lo, hi)])
+
+
+def _pn1(name, n):
+    key = (name, n); v = _PN.get(key)
+    if v is None:
+        v = float((np.sign(_SIG[n][name]) * _RET[n]).sum()); _PN[key] = v
+    return v
+
+
+def _pn(name, lo, hi):
+    return np.array([_pn1(name, n) for n in range(lo, hi)])
 
 
 def _tcrit():
@@ -210,19 +227,30 @@ def _gate_at(a, tcrit=None):
     lo = a - ROT_W + 1
     if lo < WARMUP:
         return None
-    if tcrit is None:
-        tcrit = _tcrit()
-    ic_c = _ic("champ", lo, a + 1)
-    best = None; best_ic = -1e9
+    if GATE_MODE == "ic":
+        if tcrit is None:
+            tcrit = _tcrit()
+        ic_c = _ic("champ", lo, a + 1)
+        best = None; best_v = -1e18
+        for name in CHALLENGERS:
+            ic = _ic(name, lo, a + 1); d = ic - ic_c
+            t_d = d.mean() / (d.std() / np.sqrt(len(d)) + 1e-18)
+            t_i = ic.mean() / (ic.std() / np.sqrt(len(ic)) + 1e-18)
+            if d.mean() >= ROT_MARGIN and t_d > tcrit and ic.mean() > 0 and t_i > tcrit and ic.mean() > best_v:
+                best_v = ic.mean(); best = name
+        return best
+    # profitability-based gate (adopted): beat champion on trailing realized book-return
+    pch = _pn("champ", lo, a + 1)
+    best = None; best_v = -1e18
     for name in CHALLENGERS:
-        ic = _ic(name, lo, a + 1)
-        d = ic - ic_c
-        sd_d = d.std(); sd_i = ic.std()
-        t_d = d.mean() / (sd_d / np.sqrt(len(d)) + 1e-18)
-        t_i = ic.mean() / (sd_i / np.sqrt(len(ic)) + 1e-18)
-        if d.mean() >= ROT_MARGIN and t_d > tcrit and ic.mean() > 0 and t_i > tcrit:
-            if ic.mean() > best_ic:
-                best_ic = ic.mean(); best = name
+        pc = _pn(name, lo, a + 1)
+        if GATE_MODE == "sharpe":
+            ok = pc.mean() / (pc.std() + 1e-9) > pch.mean() / (pch.std() + 1e-9) + PNL_MARGIN and pc.mean() > 0
+            val = pc.mean() / (pc.std() + 1e-9)
+        else:  # "pnl"
+            ok = (pc - pch).mean() > PNL_MARGIN; val = pc.mean()
+        if ok and val > best_v:
+            best_v = val; best = name
     return best
 
 

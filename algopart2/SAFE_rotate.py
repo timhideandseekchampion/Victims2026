@@ -58,12 +58,13 @@ WARMUP      = 96
 ALGO_LL_DOLLAR = 50_000
 
 # ---- rotation knobs ---------------------------------------------------------
-# BALANCED preset (rotate_sweep.py): capture lag ~36d (vs 53d conservative), 0 cost on real data,
-# ~7% wrong-signal days in a pathological 30d-flip chop. Conservative was (60, 3.0, 10).
-ROT_W      = 40      # trailing window of forecasts used to estimate IC
-ROT_TCRIT  = 2.5     # significance bar (t-stat) for a challenger to qualify
-ROT_MARGIN = 0.0     # required IC edge over champion ("same or better" = 0.0)
-ROT_P      = 7       # consecutive days the gate must hold before rotating (hysteresis)
+# ADOPTED pnl-W60 gate (gate_sweep.py + verify-pnl-gate workflow): more sensitive than the IC
+# significance gate -- byte-identical on real data (0 rot, 694.13) yet captures a real regime far
+# faster (momentum +30k/6 seeds, weak-edge +65k). ROT_TCRIT only matters if GATE_MODE reverts to "ic".
+ROT_W      = 60      # trailing window used to estimate the gate metric
+ROT_TCRIT  = 2.5     # (ic mode only) significance bar
+ROT_MARGIN = 0.0     # (ic mode only) required IC edge over champion
+ROT_P      = 5       # consecutive days the gate must hold before rotating (hysteresis)
 REVL_W     = 30      # long-reversion lookback
 RESID_K    = 60      # residual-reversion / beta window
 LL2_HL     = 1000    # half-life for the multi-lag challenger ridge
@@ -72,6 +73,11 @@ BT_NB      = 5       # Box-Tiao: number of most-mean-reverting baskets
 BT_LOOK    = 250     # Box-Tiao: VAR(1) fit lookback
 BT_ZWIN    = 20      # Box-Tiao: basket-spread z-score window
 ROT_BONF   = True    # scale the significance bar for the number of challengers (multiple-testing)
+# GATE_MODE (rot_gate_compare.py): "ic" = paired-t significance on IC (conservative, ~32d lag);
+# "pnl" = rotate on trailing realized PROFITABILITY beating champion (objective-aligned, ~12d lag,
+# still inert on real data); "sharpe" = trailing Sharpe (middle: ~18d, less flip-whipsaw).
+GATE_MODE  = "pnl"   # "ic" | "pnl" (ADOPTED) | "sharpe" | "softblend"  (see SAFE_rotate notes above)
+PNL_MARGIN = 0.0     # required trailing book-return edge over champion (pnl/sharpe modes)
 
 # ---- momentum challengers (Jegadeesh-Titman / Blitz-Huij-Martens / Barroso) --
 MOMJT_L    = 120     # cross-sectional momentum lookback (days)
@@ -114,6 +120,7 @@ _RET = {}            # n -> realized demeaned idio return graded against _SIG[n]
 _ICD = {}            # (name, n) -> realized daily IC   (memoized; pure fn of _SIG/_RET)
 _AZ  = {}            # s (#cols) -> index trend z-value from the first s columns (memoized)
 _XC  = {}            # n -> cross-sectional lag-1 autocorr corr(_RET[n-1], _RET[n])  (memoized)
+_PN  = {}            # (name, n) -> daily as-if-traded book-return proxy (sign(forecast) . realized ret)
 
 
 def _limits(nInst):
@@ -273,6 +280,18 @@ def _ic(name, lo, hi):
     return np.array([_ic1(name, n) for n in range(lo, hi)])
 
 
+def _pn1(name, n):
+    """daily as-if-traded book-return proxy = sum(sign(forecast) * realized idio return). Memoized."""
+    key = (name, n); v = _PN.get(key)
+    if v is None:
+        v = float((np.sign(_SIG[n][name]) * _RET[n]).sum()); _PN[key] = v
+    return v
+
+
+def _pn(name, lo, hi):
+    return np.array([_pn1(name, n) for n in range(lo, hi)])
+
+
 def _tcrit():
     """Significance bar, Bonferroni-bumped for the number of challengers tested.
     Gaussian tail: to hit tail prob p0/C, t_eff ~= sqrt(t0^2 + 2 ln C)  (numpy-only)."""
@@ -311,24 +330,58 @@ def _xsac_flag(T):
 
 
 def _gate_at(a, tcrit=None):
-    """Which challenger (if any) qualifies using the window of W forecasts ending at day a."""
+    """Which challenger (if any) qualifies using the trailing window ending at day a.
+    GATE_MODE 'ic' = paired-t significance (conservative); 'pnl'/'sharpe' = beat champion on
+    trailing realized profitability (faster, still inert on real data -- see rot_gate_compare.py)."""
     lo = a - ROT_W + 1
     if lo < WARMUP:
         return None
-    if tcrit is None:
-        tcrit = _tcrit()
-    ic_c = _ic("champ", lo, a + 1)
-    best = None; best_ic = -1e9
+    if GATE_MODE == "ic":
+        if tcrit is None:
+            tcrit = _tcrit()
+        ic_c = _ic("champ", lo, a + 1)
+        best = None; best_v = -1e18
+        for name in CHALLENGERS:
+            ic = _ic(name, lo, a + 1); d = ic - ic_c
+            t_d = d.mean() / (d.std() / np.sqrt(len(d)) + 1e-18)
+            t_i = ic.mean() / (ic.std() / np.sqrt(len(ic)) + 1e-18)
+            if d.mean() >= ROT_MARGIN and t_d > tcrit and ic.mean() > 0 and t_i > tcrit and ic.mean() > best_v:
+                best_v = ic.mean(); best = name
+        return best
+    # profitability-based gate: rotate to the challenger that beats champion on trailing book-return
+    pch = _pn("champ", lo, a + 1)
+    best = None; best_v = -1e18
     for name in CHALLENGERS:
-        ic = _ic(name, lo, a + 1)
-        d = ic - ic_c
-        sd_d = d.std(); sd_i = ic.std()
-        t_d = d.mean() / (sd_d / np.sqrt(len(d)) + 1e-18)
-        t_i = ic.mean() / (sd_i / np.sqrt(len(ic)) + 1e-18)
-        if d.mean() >= ROT_MARGIN and t_d > tcrit and ic.mean() > 0 and t_i > tcrit:
-            if ic.mean() > best_ic:
-                best_ic = ic.mean(); best = name
+        pc = _pn(name, lo, a + 1)
+        if GATE_MODE == "sharpe":
+            shc = pc.mean() / (pc.std() + 1e-9)
+            ok = shc > pch.mean() / (pch.std() + 1e-9) + PNL_MARGIN and pc.mean() > 0
+            val = shc
+        else:  # "pnl"
+            ok = (pc - pch).mean() > PNL_MARGIN
+            val = pc.mean()
+        if ok and val > best_v:
+            best_v = val; best = name
     return best
+
+
+def _blend_wz(T):
+    """SOFT-BLEND: continuous champion<->challenger tilt. Each challenger's weight = its trailing
+    book-return edge over the champion (relu, scaled by the champion's own trailing PnL). Weight is 0
+    when it is not beating the champion, so on real data this collapses to the pure champion; it tilts
+    smoothly (never flips discretely) toward a challenger that is genuinely out-earning it."""
+    lo = T - ROT_W
+    if lo < WARMUP:
+        return _SIG[T]["champ"]
+    pch = _pn("champ", lo, T)                       # trailing champion book-return (gradable: n < T)
+    scale = abs(pch.mean()) + 1e-9
+    wz = _SIG[T]["champ"].astype(float).copy(); wsum = 1.0
+    for c in CHALLENGERS:
+        e = (_pn(c, lo, T) - pch).mean()
+        wc = max(0.0, e) / scale                    # 0 unless the challenger out-earns the champion
+        if wc > 0.0:
+            wz = wz + wc * _SIG[T][c]; wsum += wc
+    return wz / wsum
 
 
 def _choose(T):
@@ -423,14 +476,17 @@ def getMyPosition(prcSoFar):
 
     _ensure_cache(prcSoFar)
     ready = t >= WARMUP + ROT_W + ROT_P
-    chosen = _choose(t) if ready else "champ"
-    wz = _SIG[t][chosen]
+    if GATE_MODE == "softblend" and ready:
+        chosen = "blend"; wz = _blend_wz(t)
+    else:
+        chosen = _choose(t) if ready else "champ"
+        wz = _SIG[t][chosen]
 
     logp = np.log(prcSoFar)
     r = logp[:, 1:] - logp[:, :-1]
 
     # kill switch: if the traded edge's IC has inverted (sustained significant-negative), stay FLAT
-    killed = ready and _kill(t, chosen)
+    killed = ready and _kill(t, "champ" if chosen == "blend" else chosen)
     if not killed:
         pos[1:] = np.sign(wz) * (dlr[1:] / cur[1:])
 
