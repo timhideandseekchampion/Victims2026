@@ -1,17 +1,21 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8">
+<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAFE vs QUAL vs SWING vs LLALGO vs LLDOLLAR — entries & exits review</title>
+<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SAFE vs QUAL vs SWING vs LLALGO vs LLDOLLAR — entries & exits review</title>
 <style>
+/* FIXED: Root variables now default to dark mode colors immediately */
 :root{
-  --bg:#fbfbfa; --surface:#fff; --ink:#1a1a1a; --ink2:#5a5f66; --muted:#9aa0a6;
-  --grid:#ececec; --border:#e3e3e0;
-  --long:#0e9e73; --short:#e0455e; --pnl:#3b6fd4; --vo:#d98a2b;
-  --longband:rgba(14,158,115,.12); --shortband:rgba(224,69,94,.11);
-}
-@media (prefers-color-scheme:dark){:root{
   --bg:#15171a; --surface:#1d2024; --ink:#e9eaec; --ink2:#a6adb5; --muted:#6b7178;
   --grid:#2a2e33; --border:#31363c;
-  --long:#2fd39a; --short:#ff6b83; --pnl:#6fa0f5;--vo:#e0a24a;
+  --long:#2fd39a; --short:#ff6b83; --pnl:#6fa0f5; --vo:#e0a24a;
+  --longband:rgba(47,211,154,.15); --shortband:rgba(255,107,131,.13);
+}
+@media (prefers-color-scheme:light){:root{
+  --bg:#15171a; --surface:#1d2024; --ink:#e9eaec; --ink2:#a6adb5; --muted:#6b7178;
+  --grid:#2a2e33; --border:#31363c;
+  --long:#2fd39a; --short:#ff6b83; --pnl:#6fa0f5; --vo:#e0a24a;
   --longband:rgba(47,211,154,.15); --shortband:rgba(255,107,131,.13);
 }}
 :root[data-theme=dark]{--bg:#15171a;--surface:#1d2024;--ink:#e9eaec;--ink2:#a6adb5;--muted:#6b7178;--grid:#2a2e33;--border:#31363c;--long:#2fd39a;--short:#ff6b83;--pnl:#6fa0f5;--vo:#e0a24a;--longband:rgba(47,211,154,.15);--shortband:rgba(255,107,131,.13);}
@@ -20,7 +24,7 @@
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 .wrap{max-width:1280px;margin:0 auto;padding:20px 20px 60px}
 h1{font-size:19px;margin:0 0 2px} .sub{color:var(--ink2);font-size:13px;margin:0 0 16px}
-.bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:14px 0;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+.bar {display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:14px 0;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
 .seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .seg button{border:0;background:transparent;color:var(--ink2);padding:7px 16px;font-weight:600;cursor:pointer;font-size:13px}
 .seg button.on{background:var(--ink);color:var(--bg)}
