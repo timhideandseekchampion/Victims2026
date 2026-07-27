@@ -5,7 +5,7 @@ DATA = json.load(open("positions_data.json"))
 
 HTML = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAFE vs QUAL vs SWING vs LL-GATE — entries & exits review</title>
+<title>SAFE vs QUAL vs SWING vs LLALGO vs LLDOLLAR — entries & exits review</title>
 <style>
 :root{
   --bg:#fbfbfa; --surface:#fff; --ink:#1a1a1a; --ink2:#5a5f66; --muted:#9aa0a6;
@@ -50,12 +50,12 @@ canvas{display:block;width:100%}
 select{background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:7px;padding:6px 9px;font-size:13px}
 .sortbtn{background:var(--surface);border:1px solid var(--border);color:var(--ink2);border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer}
 </style></head><body><div class="wrap">
-<h1>SAFE vs QUAL vs SWING — entries &amp; exits, all 51 assets · 750 days</h1>
+<h1>SAFE vs QUAL vs SWING vs LLALGO vs LLDOLLAR — entries &amp; exits, all 51 assets · 750 days</h1>
 <p class="sub">Green band = book is <b>long</b> that asset · red band = <b>short</b>. Triangles mark each entry (position flip). Positions re-decide daily and flip often (~every 2 days), so zoom in (drag on the price chart) to see individual ▲/▼. Bottom strip = cumulative PnL for that asset.</p>
 
 <div class="bar">
   <div class="seg" id="stratseg">
-    <button data-s="SAFE" class="on">SAFE</button><button data-s="QUAL">QUAL</button><button data-s="SWING">SWING</button><button data-s="LLGATE">LL-GATE</button>
+    <button data-s="SAFE" class="on">SAFE</button><button data-s="QUAL">QUAL</button><button data-s="SWING">SWING</button><button data-s="LLALGO">LLALGO</button><button data-s="LLDOLLAR">LLDOLLAR</button>
   </div>
   <label>Asset <select id="assetsel"></select></label>
   <button class="sortbtn" id="resetzoom">Reset zoom</button>
@@ -79,7 +79,7 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--border)
 <p class="hint">Drag left→right on the price chart to zoom a date range · click a mini-chart below to switch asset.</p>
 
 <div class="detailhead" style="margin-top:26px">
-  <span class="nm">ALGO index — lead-lag skew gate <span style="color:var(--ink2);font-weight:400">(the LL-GATE book's index leg)</span></span>
+  <span class="nm">ALGO index — lead-lag skew gate <span style="color:var(--ink2);font-weight:400">(LLALGO book's index leg · count gate, blend 0.30)</span></span>
   <span class="stat" id="skewstat"></span>
 </div>
 <div class="card"><canvas id="skew" height="240"></canvas></div>
