@@ -19,9 +19,10 @@ Part-3 workspace: the current strategies + the 1000-day `prices.txt`, plus two v
 | `SAFE_llboost_v4.py` | **SAFE_llboost_v3 + SAFE_llboost_v2 combined**: the two changes are structurally independent (one in the idio boost, one in the ALGO leg's momentum) and compound — superseded by v6, see below |
 | `SAFE_llboost_v5.py` | **SAFE_llboost_v3 + re-tuned `BOOST_IC_L`/`BOOST_MIN_DAY`**: same N=39 candidate-pool restriction as v3, with the other boost sub-parameters re-swept for the new pool size — **validated, cleanest result (n_worse=0/61), see below** |
 | `SAFE_llboost_v6.py` | **SAFE_llboost_v5 + SAFE_llboost_v2 combined**: same orthogonal-components logic as v4, built on the refined v5 boost instead of v3 — best result of that session |
-| `SAFE_llboost_v7.py` | **SAFE_llboost_v6 + re-tuned `COMBINE_GAIN`**: ALGO leg re-swept against the TRUE, final v6 idio book (never checked before) — every parameter confirmed still-optimal except `COMBINE_GAIN` (3.5→16.0), independently confirmed by a 720-combo joint grid search — **best result overall, see below** |
+| `SAFE_llboost_v7.py` | **SAFE_llboost_v6 + re-tuned `COMBINE_GAIN`**: ALGO leg re-swept against the TRUE, final v6 idio book (never checked before) — every parameter confirmed still-optimal except `COMBINE_GAIN` (3.5→16.0), independently confirmed by a 720-combo joint grid search — best result of that session |
+| `SAFE_llboost_v8.py` | **SAFE_llboost_v7 + ALGO min-conviction HOLD deadband**: identical idio book, boost, and ALGO signal construction; on days the ALGO leg's raw combine target falls under 25% of the $100k cap (a near-cancellation of the vol-regime vs. momentum sub-signals, empirically loss-making) it holds yesterday's share count instead of resizing into the small, uncertain-sign target, gated off before 400 days of ALGO history exist — **validated, cleanest result (n_worse=0/61, rolling floor unchanged), see below — current best** |
 
-The idio book (instruments 1–49) is identical across the first seven; `SAFE_llboost.py` and its v2–v6 variants are the exceptions (they extend the idio book with the pairwise boost described below).
+The idio book (instruments 1–49) is identical across the first eight; `SAFE_llboost.py` and its v2–v7 variants are the exceptions (they extend the idio book with the pairwise boost described below).
 
 ## Data
 `prices.txt` — 51 instruments × **1000 days** (grader scores the last 250 → days 751–1000).
@@ -54,9 +55,25 @@ Both `build_*.py` scripts are day-count agnostic (read `nt` from the data), so t
 - **Does not persist per-name:** corr(H1 IC, H2 IC) across names = −0.04 — so selecting the "significant"
   stocks in-sample is **data-snooping / trading noise**. Do **not** extend vol to the book.
 - **Real on ALGO only:** ALGO's vol IC is +0.02→+0.11→+0.14 (strengthening every sub-period) and survives a
-  circular-shift surrogate test (p<0.001 full, <0.00025 new). Plausibly an index-level vol risk premium.
+  circular-shift surrogate test (p<0.001 full, <0.00025 new).
 - **Caveat:** it is index-specific, so persistence to the finals draw depends on the generator. The adaptive
   gate is the safety net — it sizes the leg to zero if the effect is absent. Combining with lead-lag hurts.
+- **What the "strengthening" actually is (`test_algo_ic_regime_drivers.py`):** not a recurring switching
+  regime — a single, roughly monotonic sign transition concentrated in days ~100–500 (quartile means
+  −0.00078 → +0.00092 → +0.00154 → +0.00230; **100% of trailing-IC days negative in 0–250, 0% negative in
+  750–1000**; 9 of 13 total zero-crossings fall in the 250–500 quartile alone). The double-IC veto's actual
+  firings track this almost exactly: 36/300 days before day 500 (12.0%) vs only 7/500 from day 500 on
+  (1.4%) — it did its real work cleaning up the transition and is nearly dormant in the graded window.
+  Tested two candidate leading indicators (vol level, trailing-trend direction) hoping to find something
+  tradeable *ahead of* the reactive trailing-IC estimate — neither gives a clean signal (vol tertile IC
+  +0.052/+0.075/+0.005, no monotonic risk-premium-in-high-vol pattern; trend up/down +0.059/+0.105, a
+  modest difference at best). A full-sample GARCH(1,1)-in-Mean fit directly tests the "risk premium"
+  framing above and does **not** support it as a single stable coefficient (λ=+0.125, t=0.53, p=0.60) —
+  per-quartile λ does drift in the same direction as everything else (−0.11→−1.31→+3.98→+10.45, each
+  individually insignificant), consistent with one drifting transition rather than a stationary premium.
+  **No better leading indicator found** — the existing reactive gate already concentrates its activity
+  almost exactly where the real transition happened and goes quiet once it resolves, which is close to
+  the best available response given the alternatives tested.
 
 ## Headline (days 751–1000 vs 501–750)
 The idio book is intact (~+$160k both windows; idio-only score **585 → 586**). The whole drop is the
@@ -292,7 +309,7 @@ Beats v4 on every metric (marginally) — the IC_L/MIN_DAY refinement carries th
 combination cleanly. Confirmed identical to v2 on days 100–400 (boost still inactive there in
 both: 576.0 in both).
 
-## `SAFE_llboost_v7.py` — re-tuned `COMBINE_GAIN` (best result overall)
+## `SAFE_llboost_v7.py` — re-tuned `COMBINE_GAIN` (superseded by v8, see below)
 v6's ALGO-leg parameters were validated at two different, now-stale points: `COMBINE_GAIN=3.5` was
 chosen before ANY pairwise boost existed; `MOM_LB_SHORT/LONG=7/12` was chosen against the ORIGINAL
 `SAFE_llboost`'s boost (N=49, IC_L=190, MIN_DAY=500), not v6's final one. Neither had ever been
@@ -336,6 +353,461 @@ matching every prior `vN` validator's convention — compares against the origin
 Every one of OLD/NEW/rolling-mean/rolling-floor improves over v6, simultaneously, and `n_worse=1/61`
 against the original baseline is cleaner than v6's own 9/61.
 
+## `SAFE_llboost_v8.py` — ALGO min-conviction HOLD deadband (superseded by v9, see below)
+The "v7 budget" diagnostic above found the ALGO leg runs at 95.1% cap utilisation and is essentially
+never flat, but on the 25/499 days where the raw combine target lands under ~50% of the $100k cap —
+a near-cancellation of the vol-regime signal against the momentum signal — those days lose **-$81/day**
+on average, against +$309/day (50–99% util.) and +$188/day (≥99% util.) everywhere else: low
+conviction there is also wrong-sign-prone, not just small. Separately, the regime-driver investigation
+(above) found no better *predictive* signal for the ALGO edge's sign — so rather than trying to see the
+flip coming, this targets the same information the shipped leg already has: **don't resize into a
+small, uncertain-sign position — hold yesterday's share count instead.**
+
+Two treatments tested (`test_v7_algo_deadband.py`): FLATTEN (go to 0) and HOLD (keep yesterday's
+position). HOLD passed OLD+NEW+rolling-mean at every threshold 0.10–0.25, but all 16 "worse" rolling
+windows were the earliest ones (end_day 400–470, ~-15 pts each) — the same shape as the reason
+`BOOST_MIN_DAY` exists: an adaptive mechanism unreliable on thin history. Fix: add an analogous
+minimum-history gate. A joint sweep over threshold × `DEADBAND_MIN_DAY` (`test_v7_algo_deadband_v2.py`,
+40 configs) found `min_day≥400` gives a clean plateau — n_worse=0/61 at min_day∈{400,450,550,600} ×
+thresh∈{0.10,0.15,0.20,0.25} — not a single lucky point; a neighbor grid around the selected
+thresh=0.25/min_day=400 confirms it. Implemented as a real standalone module (module-level HOLD
+state, same pattern `_limits`' `_DLR` cache already uses) and validated on the actual `getMyPosition`
+pathway, not just the backtest reconstruction used for the sweep — reproduces the sweep's numbers
+exactly (`validate_llboost_v8_full.py`) and gives official score **888.86** (`eval_llboost_v8.py`,
+up from v7's 888.53):
+
+| | OLD 501–750 | NEW 751–1000 | rolling mean | rolling floor | n_worse/61 (vs v7) |
+|---|---|---|---|---|---|
+| SAFE_llboost_v7 | 830.3 | 888.5 | 876.8 | 674.4 | — |
+| **SAFE_llboost_v8 (HOLD, thresh=0.25, min_day=400)** | **847.4** | **888.9** | **886.2** | **674.4** | **0/61** |
+
+Every one of OLD/NEW/rolling-mean improves; the rolling **floor is unchanged to the decimal** — the
+deadband never touches the worst window at all, unlike most prior improvements in this file which
+trade a bit of floor for mean. n_worse=0/61 matches v5's own cleanest result.
+
+**Implementation caveat, found and fixed during validation, not just noted:** HOLD needs a real
+"yesterday", which is cross-call state — safe under this repo's full walk-up harnesses
+(`validate_*_full.py`, live sequential trading), but `eval_llboost_vN.py`'s official-score convention
+calls `getPosition` only over the graded window, skipping the walk-up — a genuine cold start with no
+real prior position to hold. Fixed by only trusting the cached position when the current call is the
+immediate sequential successor of the last one; otherwise the deadband is bypassed for that one call
+(computed exactly as v7 would, never a fabricated flat position) and resumes normally from the next
+call. Confirmed consistent under both conventions (888.86 official vs 888.9 full-walk — the same
+rounding-level agreement v7 itself shows between its two numbers), so this isn't a latent bug waiting
+to surprise a different harness.
+
+## `SAFE_llboost_v9.py` — beta-adjusted idio ridge target (superseded by v10, see below)
+`test_pc2_probe.py` found the ridge fit's same-day residual cross-correlation across the 50 idio
+names is **+0.20 even after fitting** — real, unexplained common-mode co-movement left in the
+training target Y, which a lagged (yesterday→tomorrow) regression can never remove since it's
+contemporaneous. That shared variance isn't stock-specific signal; every one of the 50 per-half-life
+fits was spending estimation effort jointly explaining it.
+
+**First attempt, proven a no-op, not just rejected** (`test_v10cand_demean_y.py`): subtracting the
+same value (the daily equal-weighted average) from every one of the 50 response columns before
+fitting is **algebraically inert** here. The fit is linear in Y, so a uniform per-day shift moves
+every stock's forecast by an *identical* constant that day — which the existing
+`fi = pred - pred.mean()` step removes anyway. Verified by hand (completing the square) and
+numerically: every partial-demean weight 0.1–1.0 gave bit-identical scores to v8 (n_worse=0/61 at
+every one — literally zero windows differed, not just "no improvement").
+
+**The fix** (`test_v10cand_beta_demean.py`): make the correction non-uniform. Subtract
+`beta_j * factor` using each stock's OWN causally-estimated beta to the idio common-mode factor
+(trailing `BETA_DEMEAN_W` days), instead of the factor itself. Since `beta_j` varies by stock this
+does not reduce to a uniform shift (confirmed on synthetic data before touching real data: a
+beta-weighted correction changes the forecast by a real amount, a uniform one measurably does not —
+diff ~1e-15 vs ~0.07 on the same toy problem). A joint sweep (3×5, then a finer 5×5 grid) found a
+genuine **plateau**, not a lucky point — every config in `lam∈[0.4,0.6] × BETA_DEMEAN_W∈[400,600]`
+improves rolling mean AND floor simultaneously:
+
+| | OLD 501–750 | NEW 751–1000 | rolling mean | rolling floor | n_worse/61 (vs v8) |
+|---|---|---|---|---|---|
+| SAFE_llboost_v8 | 847.4 | 888.9 | 886.2 | 674.4 | — |
+| **SAFE_llboost_v9 (lam=0.6, BETA_DEMEAN_W=500)** | **848.8** | **893.3** | **894.1** | **708.6** | 16/61 |
+
+This is the first candidate in this file's whole history to improve the rolling **floor by this
+much (+34.1) simultaneously with the mean** — every prior improvement (v3 through v8) either left
+the floor unchanged or improved it only marginally while gaining mean elsewhere. n_worse=16/61 isn't
+as clean as v8's own 0/61 — reported honestly, not hidden — but is 0/61 against the **original**
+`SAFE_llboost` baseline, the same convention used to headline every prior version. Validated on the
+real `getMyPosition` pathway (`validate_llboost_v9_full.py`): reproduces the sweep's numbers exactly.
+Official score (`eval_llboost_v9.py`): **893.32** (vs v8's 888.86). Fully causal, no cross-call state
+(unlike v8's ALGO HOLD deadband) — the eval-harness cold-start class of bug v8 needed a fix for
+cannot recur here.
+
+## v10 follow-ups: walk-forward check (reassuring) and an ALGO crossover extension (rejected)
+**Walk-forward robustness check on v10's parameter selection** (extending the same diligence applied
+to v9's beta-demean earlier this session): re-ranked the full 45-config `(long_w, weight)` grid using
+ONLY the OLD window, then checked the untouched NEW window as a genuine holdout — and the reverse.
+This holds up far better than v9's did: **v10's actual pick (`long_w=22, weight=0.015`) is the
+#1-ranked config by OLD alone** (and 8/10 top-OLD configs also beat baseline on the untouched NEW
+window), and ranks **#5/45 by NEW alone** (7/10 top-NEW configs also beat baseline on untouched OLD).
+Across the full grid, **18/45 (40%) beat baseline on both windows with no selection at all** — versus
+9% for v9's grid — spanning nearly every `long_w` and `weight` tested, not a narrow corner. v10's
+parameters would very likely have been selected under strict temporal separation.
+
+**Extending the same idea to ALGO — rejected, on three independent, converging checks.** The
+idio-side signal fades a stock's short-term move only when it opposes its own medium-term trend,
+relative to the cross-section. ALGO has no cross-section, so the natural analogue is a pure
+time-series version: fade ALGO's own short-term price move only when it opposes ALGO's own
+medium-term trend, voted in as an additional blend on top of the existing target
+(`test_v17cand_algo_crossover.py`). The initial sweep (0/45 configs beating v10) showed a suspicious
+pattern — at small windows, NEW kept improving as blend weight rose while OLD kept degrading — and
+rather than reject on that alone, three follow-up checks probed *why*:
+
+1. **Raw, model-free IC of the vote against ALGO's own next-day return, by era**
+   (`test_v17_algo_crossover_diag.py`) — no blend weight, no interaction with the rest of the book,
+   just the crossover vote itself. It is **not stable across parameter choice**: `short5_long10` and
+   `short5_long15` show positive IC in both OLD and NEW (just much stronger in NEW: +0.05→+0.33 and
+   +0.04→+0.23), but `short8_long22` **flips sign entirely** (OLD −0.09, NEW +0.03) and
+   `short10_long30` flips the *other* direction (OLD ≈0, NEW −0.13). A genuinely robust signal
+   shouldn't reverse sign from minor lookback changes — v10's rank-stability didn't, across
+   `long_w`∈[15,28] and `short_w`∈[6,12]. The trailing-250d IC also crosses zero 2-5 times over the
+   file for these pairings — oscillating, not the single clean transition ALGO's own vol-timing edge
+   showed earlier this session, nor the stable-throughout pattern the idio boost shows.
+2. **Walk-forward check on the full blended-book grid** (49 configs, same method applied to v9/v10):
+   **0/49 configs beat baseline on both windows with no selection at all** — versus 9% for v9's grid
+   and 40% for v10's. Selecting by NEW alone, **every single one of the top 8 configs fails the OLD
+   holdout**. Categorically weaker than either shipped result, not just "less clean."
+3. **Trailing-IC-gated version** (`test_v17_algo_crossover_gated.py`) — tests whether making the vote
+   regime-adaptive (only trust it when it's recently been working, the same philosophy already
+   validated in ALGO's own `_side()` double-IC gate) rescues it, the way a gate might rescue a signal
+   that's real but intermittent. **0/27 gated configs pass**, and the OLD-degrades/NEW-improves
+   pattern persists identically under the gate — this isn't a signal that's sometimes on and
+   sometimes off in a way a trailing filter can separate; it's a persistent asymmetry between the two
+   eras that no amount of regime-adaptivity fixes (contrast with `test_v7cand_adaptive_boostk.py`,
+   where a similar gate failed for the OPPOSITE reason — the boost's edge was too *stable* to need
+   one; here the edge is too *unstable* for the gate to salvage).
+
+Three independent methods — including the one method (adaptive gating) that has previously rescued
+borderline ideas elsewhere in this file — agree. Rejected with high confidence, not as a judgment
+call on a marginal weight.
+
+## Parametric-bootstrap stress test for v9/v10 — a genuinely nuanced result, not a clean pass or fail
+The walk-forward checks above only re-slice the SAME 1000 historical days used to find both
+mechanisms. `test_v10_stress_synthetic.py` asks a harder question: does the improvement generalize
+to FRESH synthetic draws from a generator that does NOT specifically encode beta-demean or
+rank-stability (extending `stress_test_synthetic.py`'s existing one-factor-market + VAR-like-ridge +
+stochastic-vol calibration)? Paired design: run baseline/v9/v10 on the SAME draw, compare.
+
+**Original generator (i.i.d. residuals, N=25 draws): both mechanisms look like noise.** v9 beats
+baseline on only 44% of draws (mean diff −6.5, p=0.56); v10 beats v9 on 56% (mean diff −0.6, p=0.79).
+Neither remotely significant.
+
+**But the generator has a specific, checkable flaw.** Directly measured: the real data's same-day
+residual cross-correlation (this exact ridge spec) is **+0.202** — matching `test_pc2_probe.py`'s
+earlier finding almost exactly — while the original generator draws residuals independently (zero
+correlation by construction). It is structurally missing the *exact* feature v9's beta-demean
+targets, making it an unfair null for that specific mechanism.
+
+**Refined generator (residuals given the measured +0.202 common-mode correlation, N=20 draws):** v9
+beats baseline on **65%** of draws (mean diff **+11.6**, still p=0.35 — directionally supportive, not
+formally significant at this sample size). **v10 vs v9 stays a coin flip (50%, mean diff −1.4,
+p=0.49)** even with this fix, because the refinement targets v9's specific mechanism (residual
+correlation), not v10's (short/long price-level crossover dynamics) — a fair synthetic test of v10
+would need a differently-enriched generator (added own-asset momentum/reversion autocorrelation
+beyond a plain lag-1 VAR) that hasn't been built.
+
+**Honest reading:** this is real, informative evidence, not a verdict either direction. v9's
+mechanism gains meaningful support once the null model stops being structurally biased against
+exactly what it targets — a good sign, short of formal confirmation. v10's mechanism is **genuinely
+untested by this method, not refuted by it** — the synthetic generator simply isn't built to contain
+what it exploits. Both real-data deltas (v9-baseline +64.7, v10-v9 +19.3) remain within roughly
+1-1.5 standard deviations of these synthetic null distributions, which is the correct, calibrated
+way to describe the uncertainty here rather than treating either the walk-forward checks or this
+test as the final word alone.
+
+## Follow-up: an honestly-calibrated synthetic test built specifically for v10 — still doesn't confirm it
+The prior stress test explicitly flagged that no generator had been built containing what v10's
+rank-stability mechanism targets. `test_v10_stress_synthetic_v2.py` attempts this properly rather
+than leaving it unresolved:
+
+**Checked for an honest calibration target first, before building anything.** The naive idea — raw
+per-stock own-return autocorrelation at short vs medium lags — is a dead end: measured on ridge
+residuals at lags 1-30, every value is under 0.013 in magnitude, no pattern. There is no honest,
+non-arbitrary structure here to inject. But v10 doesn't actually use raw own-autocorrelation — it
+uses the *cross-sectional* z-scored short/long divergence. That specific quantity, measured directly:
+pooled IC of v10's exact vote construction against next-day return, full real sample = **+0.0147**
+(n=14,487) — small, but real and directly measurable.
+
+**The enrichment:** on top of the already-validated residual common-mode fix (ρ=0.202), inject a
+small return component proportional to the same causally-computed vote signal, calibrated (via a
+quick interpolation loop) so the resulting synthetic pooled IC matches +0.0147 — not tuned to
+whatever magnitude would make v10 win.
+
+**Result: v10 still doesn't beat v9 reliably — if anything, slightly worse.** Across 25 fresh draws
+from this fully-enriched generator: v9-baseline mean diff +9.1 (56% win rate, p=0.48 — consistent in
+direction with the earlier refined result of +11.6/65%); **v10-v9 mean diff −2.3 (36% win rate,
+p=0.27)** — pointing the wrong way, though not significantly.
+
+**Two honest limitations stated plainly, not hidden:** (1) the injection is a *uniform* average
+effect on every disagreement day — it may not reproduce whatever more heterogeneous, concentrated
+relationship actually drives the real edge, even with the average IC matched; (2) the +0.0147
+calibration target is itself measured **in-sample** on the same historical data v10 was tuned
+against, so even this more careful attempt isn't a fully independent external validation.
+
+**Updated honest picture:** v9's evidence has now been mildly supportive across two independently-
+built generators (56-65% win rates, consistently positive mean, still short of formal significance).
+v10's has failed to generalize on both attempts (56%→36% win rates), including one specifically
+engineered to contain its exact target structure. Not decisive — but this is real, additional
+evidence that should raise, not lower, the weight placed on eventually seeing genuine out-of-sample
+tournament data before trusting v10's magnitude. The real-data and walk-forward evidence for v10
+both remain genuinely positive; this tempers confidence in the *size* of the edge, not a reason to
+revert it.
+
+**Follow-up diagnosis: WHY doesn't it replicate, and should that worry us?** Broke down the real-data
+(v10 − v9) daily PnL difference directly, and benchmarked it against the (v9 − v8) transition (already
+better-supported by the synthetic tests) as a calibration point for what "normal" looks like:
+
+| | v9 vs v8 (beta-demean) | v10 vs v9 (rank-stability) |
+|---|---|---|
+| Days differing | 317/500 (63%) | 130/500 (26%) |
+| Win rate on differing days | 52.7% | 57.7% |
+| Top 5 \|diff\| share of total | 11.0% | 26.5% |
+| Top 10 \|diff\| share of total | 19.0% | 40.2% |
+| Effect excluding top 10 days | **increases** (1390→4703) | **drops by more than half** (10273→4260) |
+
+**v9's edge is "death by a thousand cuts"** — broad (317 days), barely above a coin flip per
+instance (52.7%), and it actually *loses* on its biggest-magnitude days; the real edge comes from
+volume (many small favorable calls), not a few lucky wins. That is the textbook signature of a
+genuine, low-variance improvement, consistent with its more favorable synthetic showing.
+
+**v10's edge is lumpier.** It engages broadly across names (41/50 — not a one-stock fluke) but on
+far fewer days (130), with a higher per-instance win rate (57.7%), and **more than half its total
+magnitude comes from just 10 of 500 days (2% of the period).** A signal whose realized size depends
+this much on whether a handful of large-return days happen to land favorably is inherently
+higher-variance across independent redraws — which is exactly what makes a 25-draw synthetic test
+underpowered to detect it reliably, even if the underlying mechanism is genuinely real on average.
+This does not mean v10 is fake (57.7% win rate and 41-name breadth are real positive signs) — but it
+locates precisely *why* the synthetic tests struggled, and confirms the size of v10's improvement is
+materially less robust than v9's, not just "harder to prove."
+
+## Closing out five more orphaned ideas: skewness, hub-degree, two nonlinear transforms
+Continuing the search for a genuinely new signal family (in the spirit of what made v9/v10 work,
+rather than re-mining the already-exhausted ridge/boost estimator space): five previously-written
+but never-scored test scripts, run to a real verdict.
+
+- **Return skewness** (`test_skewness_signal.py`) — per-stock rolling skewness as a predictor of
+  its own next-day return (raw, |skew|→|return|, and self-relative z-scored versions). **Rejected**:
+  all three ICs are tiny (≤0.01 in magnitude) with permutation p-values 0.26–0.69 — no detectable
+  signal in any form tested.
+- **Hub/influencer degree** (`test_hub_influencer.py`) — is a stock's fan-in count (how many other
+  names currently have it as their significant leader) itself informative, either about its own
+  return or about how reliable the ridge forecast is for it? **Rejected**: the degree distribution is
+  heavily degenerate (78.3% of stock-days have degree 0), and ridge sign-hit-rate is essentially flat
+  across every degree quartile (52.4–52.7%) — being a hub carries no information either way.
+- **Nonlinear (power-law) reversion transform** (`test_nonlinear_reversion.py`) — since the boost's
+  own convex `sign(x)*(|x|/scale)^P` transform (P=2.0) is validated, does the same shape help the
+  reversion leg (currently linear, P=1)? **Rejected, cleanly**: P=1.0 is the exact optimum
+  (n_worse=0/61), degrading monotonically in both directions (P=0.5→rmean 769.1, P=2.0→732.3, vs
+  P=1.0's 811.4) — a real, isolated optimum, not an artifact.
+- **Nonlinear lead-lag probe** (`test_nonlinear_probe.py`) — across the full 2450-candidate-pair grid,
+  is any single relationship's strength convex in move size (large leader moves predict
+  disproportionately more than small ones)? Found one pair, DUCT→AMRP, that clears a max-corrected
+  permutation test decisively (p<0.3%, persistent across both H1/H2 sub-periods). **Investigated
+  further rather than either adopted or dismissed outright**: checked whether this relationship is
+  already exploited — it is. DUCT is in the trailing-vol candidate pool on 100% of days, and AMRP has
+  DUCT as its Bonferroni-significant leader on 100% of days since the boost activated. This is the
+  boost's own primary, always-active relationship for AMRP, and the boost already applies a convex
+  (P=2.0) transform to it. The finding is a **confirmation that the existing design choice is
+  well-justified for its most heavily-relied-upon pair**, not a new, unexploited signal.
+
+## Commission/turnover sanity check on v10 — unchanged economics, gain is genuine sign accuracy
+Checked whether v10's new blended signal shifted the book's basic economics in a way that could
+change standing conclusions (the 30:1 mean-vs-variance elasticity, the ~5% commission ceiling from
+the "v7 budget" diagnostic). It hasn't:
+
+| | commission (% of gross) | idio flips/name (NEW, 250d) | ALGO turnover (mean \|Δshares\|/day) |
+|---|---|---|---|
+| v9 | 5.23% (OLD) / 4.88% (NEW) | 114.3 | 237.18 |
+| v10 | 5.11% (OLD) / 4.77% (NEW) | 113.9 | 237.18 (byte-identical — v10 never touches ALGO) |
+
+Commission is essentially flat (v10 marginally *lower*), turnover is nearly identical (114.3 vs
+113.9), and ALGO's own turnover is exactly unchanged since v10 doesn't touch that leg. **v10's entire
+gain is coming from genuinely better sign accuracy, not from trading more** — and since turnover
+hasn't moved, the standing rejection of sign-stickiness/hysteresis (killed by the same 30:1 elasticity
+against v8 and v9) still applies unchanged against v10; no need to re-test it.
+
+## Four externally-suggested ideas, tested — one shipped as `SAFE_llboost_v10.py` (current best)
+A user shared four suggestions from an external research conversation for improving on `SAFE_llboost_v7.py`.
+All four were tested against the current best at the time (v9); the source descriptions were
+partially or fully truncated for two of them, so the reconstructions are stated explicitly below
+rather than presented as verified replicas.
+
+**1. Let the pairwise boost use negative leader relationships — rejected, decisively.** The current
+`_pairwise_boost` selects each follower's leader by strongest absolute correlation (already symmetric
+to sign), but then discards the pair if the realized boost IC is non-positive (`if ic <= 0: continue`)
+— even though a Bonferroni-significant relationship was just found, just an inverse one. Tested
+inverting instead of discarding (`test_v13cand_signed_boost.py`): unlocks 33% more boost coverage
+(1837 additional stock-days) but **0/6 configs beat v9** — rmean drops from 894.1 to 877-881 across
+every magnitude-floor setting, driven mainly by OLD degrading. A follow-up magnitude-threshold sweep
+on the negative side (0.0 to 1.0, the maximum possible correlation) shows results converge
+monotonically toward — but never past — the v9 baseline as the threshold tightens, reaching an exact
+tie once the threshold is strict enough that no negative pair ever clears it. The existing `ic<=0:
+discard` rule already sits at the optimum of this entire spectrum; it isn't leaving value on the table.
+
+**2. A "signal agreement" gate on ALGO's `sig`/`msig` — rejected, decisively.** Reconstructed from a
+partially-visible description as gating on SIGN agreement between the vol-regime (`sig`) and momentum
+(`msig`) sub-signals — distinct from the shipped magnitude-based HOLD deadband (v8), since two
+sub-signals can disagree in sign while summing to something large, or agree while summing to
+something small. Tested four treatments on disagreement days (flatten / fall back to vol-only sizing
+/ reduced combine-gain / hold yesterday's position, `test_v15cand_algo_agreement.py`): **every
+variant scores far worse** (rmean 729-883 vs 894.1, n_worse 60-61/61 in every case). The reason:
+`sig` and `msig` disagree on **48% of days** — nearly half the time, not a rare event — so damping
+conviction on all of them guts real edge. This is fundamentally different from the deadband, which
+targets a narrow ~5% minority of genuinely near-zero-magnitude days; "sign disagreement" is far too
+broad a criterion here.
+
+**3. Improve the pairwise boost with leader stability — not a clean win, re-confirms the existing H3
+rejection.** This is the same mechanism as `test_h3_leader_stability.py`/`test_h3_stage2_backtest.py`
+(already tested and rejected earlier this session against an older baseline). Re-ran fresh against v9
+(`test_v14cand_leader_stability.py`) rather than just citing the old numbers: every HARD gate variant
+fails; one SOFT-multiplier config (`stab_w=40, shrink=0.3`) technically clears the joint bar
+(rmean=894.5), but a 5×5 neighbor grid around it shows only that single point passes — the other 24
+neighbors mostly land close (rmean 890-895) but fail on OLD or NEW individually. A near-miss cluster,
+not a validated one; doesn't meet this repo's bar for adoption.
+
+**4. Rank-stability trend/pullback signal — validated, shipped as `SAFE_llboost_v10.py`.** Named
+`rank_stability_short8_long15` in the source, described only as "bought medium-term leaders after
+short-term pullbacks and shorted medium-term laggards after short-term rebounds" — the exact
+construction was never fully visible. Reconstructed as a cross-sectional short/long return z-score
+crossover, algebraically reducing to a short-term reversal gated to fire only when it opposes the
+medium-term trend (see `SAFE_llboost_v10.py`'s docstring for the exact derivation). A joint grid over
+blend weight × long-window found a genuine, broad, multi-dimensional plateau — `long_w∈{18,20,22,24,28}`
+all pass at weight≈0.015-0.02 (26, 30 roll over, a real peak not an unbounded artifact), and at the
+best point every `short_w` from 6-12 also passes. Selected `short_w=8, long_w=22, weight=0.015`
+(best by rolling mean among the cleanest configs) — **the cleanest, largest single-step result in
+this file's whole history:**
+
+| | OLD 501–750 | NEW 751–1000 | rolling mean | rolling floor | n_worse/61 (vs v9) |
+|---|---|---|---|---|---|
+| SAFE_llboost_v9 | 848.8 | 893.3 | 894.1 | 708.6 | — |
+| **SAFE_llboost_v10 (short8/long22, weight=0.015)** | **871.0** | **912.6** | **909.8** | **709.7** | **0/61** |
+
+n_worse=0/61 against both v9 directly and the original `SAFE_llboost` baseline — as clean as v5's and
+v8's own 0/61 results, on the largest rmean gain (+15.6) of any single step so far. Validated on the
+real `getMyPosition` pathway (`validate_llboost_v10_full.py`): reproduces the sweep's numbers exactly.
+Official score (`eval_llboost_v10.py`): **912.64** (vs v9's 893.32). Fully causal, no cross-call
+state — same reasoning as v9's beta-demean, no eval-harness cold-start risk.
+
+## Closing out the ridge-alternative backlog: 6 more mechanisms rejected
+Before designing anything new, a batch of already-written but never-scored test scripts was re-run
+against a real baseline to check nothing was secretly a win. All decisive, all rejected:
+
+- **Kalman filter / RLS coefficients** (`test_q20_items01_04_ridge_variants.py`, continuously-adapting
+  state instead of the fixed 4-half-life EW blend): rmean collapses from 811.4 to 614-634 at every
+  process-noise setting tested, floor collapses to 353-364. Decisive.
+- **PCA pre-reduction** (project the 51-instrument panel onto top-K components before fitting):
+  rmean 474-701 (vs 811.4), floor as low as 61.2 at K=5. Consistent with RRR's own rejection — this
+  relationship isn't compressible from either the predictor or response side.
+- **Quantile regression** (median-target forecast instead of ridge's MSE target, periodic refit):
+  rmean 386.2 vs 811.4. Decisive.
+- **Winsorized returns** before fitting: no clean win — best config (K=3.0) improves OLD and rmean
+  but is worse on NEW, failing the joint bar; K=4.0 is essentially a wash.
+- **Elastic Net / Lasso** (replacing ridge's dense L2 with sparse/mixed shrinkage): best IC achieved
+  (0.0527 / 0.0504) never exceeds the ridge reference's own IC (0.0563) at any tested
+  alpha/l1_ratio — rejected on the cheaper IC-only bar before a full traded-score harness was needed.
+- **GBM vs. ridge on a hand-engineered feature panel** (`test_gbm_vs_ridge_score.py`): both the GBM
+  and a simple sklearn Ridge score far below the actual shipped idio book (≈0 to −125 vs 584-676) —
+  the feature-panel approach itself isn't competitive, regardless of model on top of it.
+
+All six point the same direction as RRR: this relationship is dense, not sparse/low-rank/compressible,
+and the linear L2 ridge on the full 51→50 structure is hard to beat with an alternative estimator or
+loss. Not exhaustive (the batch80 categories and a `test_stacking.py`/`test_gbm_panel_v2.py` family
+remain unscored), but six independent, decisive, one-directional results is a strong prior against
+that remaining pile containing a win.
+
+## Predictor-wise (empirical-Bayes-style) ridge shrinkage — rejected, 0/15, monotonic
+Uniform `RIDGE_A` shrinks all 51 predictors' loadings by the same fixed amount regardless of how
+reliably each predictor's own signal is estimated. Tested a differential version: each predictor's
+penalty scaled by `(mean-reliability / its own trailing reliability)^GAMMA`, where reliability is
+the pooled average |correlation| of that predictor against all 50 idio targets over a trailing
+window (`test_v11cand_predictor_shrink.py`, on top of the shipped `SAFE_llboost_v9`). `GAMMA=0`
+reproduces v9 exactly (confirmed). Every `GAMMA>0` tested makes it worse, monotonically: `GAMMA=0.5`
+is roughly a wash (rmean 892-895, but never clears OLD+NEW+rmean jointly), and it degrades steadily
+from there (`GAMMA=3.0`: rmean drops to 851-863 across all three windows tested). Same shape as RRR's
+rejection — best at "don't do this." Consistent with the mild prior already in this file: per-half-life
+differential shrinkage (a different axis of non-uniformity) was already rejected as "uniformly lose."
+
+## Huber-robustified ridge (IRLS) — rejected, isolated spike, not a plateau
+Tested whether down-weighting extreme training days (Huber loss via IRLS, one reweighting pass; see
+`test_v12cand_huber.py` for the honest simplification — one combined per-day robustness weight from
+the pooled residual magnitude across all 50 targets, not a true per-response Huber fit, to keep the
+shared-weight closed-form ridge solve intact) beats the shipped v9 ridge. At every "reasonable"
+threshold (`huber_k≥1.5`) the mechanism never actually engages — scores are bit-identical to v9,
+confirming it's a no-op there, not a null result. Below `huber_k=1.0` it engages and hurts sharply
+(rmean falls to 840-880). A narrow window at `huber_k∈[1.20,1.22]` technically clears the OLD+NEW+rmean
+bar (rmean 895.3-895.7) — but its immediate neighbors do not (`1.18`: fails; `1.25`: fails badly,
+n_worse=53/61), a spike roughly 0.02-0.05 wide surrounded by failures on both sides. Contrast with
+v9's beta-demean result, which held across a plateau spanning `lam∈[0.4,0.8]` **and**
+`BETA_DEMEAN_W∈[400,600]` simultaneously — this repo's own neighbor-stability convention treats an
+isolated spike like this one as noise, not a finding, and it's discarded on that basis.
+
+## Reduced-rank regression on the idio ridge ensemble — rejected, 0/14, clean and decisive
+The idio ridge (`_ewls_ridge` in `SAFE_llboost_v8.py`) fits a 51×50 coefficient matrix `B` per
+half-life (all 51 instruments' current returns → the 50 idio names' next-day returns) and shrinks
+**every one of the 2550 coefficients uniformly toward zero** via a single scalar `RIDGE_A=0.1`. Since
+this repo's own exhaustively-mapped finding is that the market is a one-factor model (ALGO/PC1 +
+lead-lag + idiosyncratic noise), uniform shrinkage-to-zero looked like the wrong prior for a
+genuinely low-rank relationship — reduced-rank regression (RRR) shrinks toward the correct low-rank
+**subspace** instead. Confirmed via a fresh repo search this was genuinely untested here (the
+existing "PCA pre-reduction" item in `test_q20_items01_04_ridge_variants.py` projects the *predictor*
+panel onto top-K components before fitting — a different technique from constraining the *fitted*
+coefficient matrix's rank).
+
+**The estimator** (`test_v9cand_rrr.py`, derived and verified by hand before trusting it — do not
+naively SVD-truncate raw `B`, and do not weight by unregularized `X'X`; both give a statistically
+different, inferior estimator): given the existing fit's `S = XtWX + (eps+a)*I` and `B = S⁻¹XtWY`,
+the ridge loss reduces by completing the square to `L(C) = const + tr((C−B)'S(C−B))` — minimizing
+this subject to `rank(C) ≤ r` is a **weighted-by-S** low-rank approximation of `B`, with closed form
+`C_r = B·V_r·V_r'`, `V_r` = top-r right singular vectors of `S^{1/2}B` (via Cholesky, numerically
+stable). At `r=50` (=min(p,q)) this must reproduce `B`, and hence the shipped v8 baseline, exactly —
+confirmed: the sweep's `r=50` row reproduces v8's docstring numbers (847.4/888.9/886.2/674.4) to the
+decimal, so the implementation is trusted before looking at any smaller-rank result.
+
+**Every rank tested loses, monotonically, with no exception:**
+
+| rank | OLD | NEW | rmean | rfloor |
+|---|---|---|---|---|
+| 1 | 377.8 | 559.2 | 378.3 | 267.3 |
+| 5 | 723.7 | 883.4 | 725.8 | 348.7 |
+| 15 | 823.4 | 939.4 | 833.8 | 418.2 |
+| 25 | 687.9 | 873.9 | 829.9 | 666.2 |
+| 35 | 816.4 | 851.5 | 869.4 | 689.0 |
+| **50 (full rank, = v8)** | **847.4** | **888.9** | **886.2** | **674.4** |
+
+**0/14 ranks beat v8 on OLD+NEW+rmean jointly**, and the approach to the baseline as `r→50` is
+monotonic with no local bump anywhere in between — the strongest possible form of this rejection:
+full rank isn't just the best config tested, it's the top of a curve that never turns over. This
+directly contradicts the working hypothesis: an honest re-check of the "second factor" evidence
+(re-running `test_pc2_probe.py` rather than trusting a cached memory of it) found PC1 (~ALGO) genuinely
+predictive (p=0%) but **PC2 clearly null (p=25%) and PC3 only borderline (p=9%)** — no second common
+factor beyond ALGO. That's consistent with there being a real dominant direction, but says nothing
+about whether the *other* 49 individually-weak, largely-independent stock-level predictive
+relationships in `B` are compressible — and empirically, they are not: the ridge ensemble apparently
+needs close to its full 50-dimensional response space to capture the real (if individually small)
+signal spread across many stock pairs, not concentrated in a handful of common directions. The
+4-half-life averaging the ensemble already does may also already be capturing whatever
+noise-suppression benefit RRR could offer, the same way it's absorbed several other prior rejected
+ridge/ensemble ideas (per-half-life `RIDGE_A`, trimmed-mean ensembling, extra half-lives).
+
+No `RIDGE_A` confirmatory grid, no `SAFE_llboost_v9.py` — the primary sweep's rejection is too clean
+and too monotonic to warrant it (the plan's own stopping condition: only run the confirmatory grid if
+the rank sweep looks promising).
+
+**A result this clean (no local bump anywhere) is exactly the shape a bug would also produce, so it
+was independently audited before trusting it** (not kept as a file — a one-off correctness check, not
+a candidate): (1) on synthetic data with a KNOWN rank-2 ground truth, the same machinery correctly
+recovers low rank as the best out-of-sample fit, confirming it works on a problem designed for it;
+(2) `B_r`'s actual numerical rank exactly matches the target rank at every test; (3) in-sample
+weighted loss decreases monotonically with rank at every half-life, as the constrained-optimum
+construction requires; (4) recomputing `B_r` via a totally different route (eigendecomposition of
+`B'SB` instead of SVD of the Cholesky-whitened matrix) agrees with the original to ~1e-15. The
+real-data score drop is much larger than the underlying regression-loss drop (rank 1 more than halves
+the traded score but only costs ~5-10% in-sample loss) — consistent with, not contradicted by, this
+book's full-conviction sign sizing: a fixed $10k stake pays for wrong signs in full, not a damped
+fraction, so a modest accuracy loss shows up amplified in traded score. The rejection is genuine.
+
 ## Post-v6 test queue: 5 genuinely-untested hypotheses, 1 validated
 Five structurally new (not re-runs of anything in the 80-idea queue above) hypotheses were tested
 this session, each held to the same causal-only, 61-window rolling `n_worse` bar as everything
@@ -358,6 +830,79 @@ dead ends, same policy as every rejected idea in this file:
   gate-based design (across window/threshold sweeps) beats v6 on OLD+NEW+rolling-mean jointly.
 - (`COMBINE_GAIN` resweep — validated, see `SAFE_llboost_v7.py` section above.)
 
+## Porting the ALGO leg's double-IC veto to the idio book — rejected, 0/29
+`_side()` in the ALGO leg takes its sign from a fast 90-day simple IC and then **refuses to trade
+at all** unless a structurally different second estimator — the mean of two EW ICs at half-lives
+(20, 45) over 200 days — agrees on the sign. Tested whether that same two-estimator-agreement veto
+helps the idiosyncratic book (`test_v7cand_double_ic_idio.py`, 29 variants at three placements;
+ALGO leg held identical throughout, so every difference is idio-side). Distinct from the
+previously-rejected single-estimator trailing-IC ideas (adaptive `BOOST_K`, gated-pair-boost,
+partial pooling, margin scaling) — the content here is *estimator disagreement* as a stand-down
+signal, not an IC level or a strength dial. **Every variant lost; nothing came within 1 point of v7
+(830.3 / 888.5 / 876.8 / 674.4).**
+
+| placement | best variant | OLD | NEW | rmean | n_worse/61 |
+|---|---|---|---|---|---|
+| A — pair (confirm the boost's `ic>0` gate) | `A-fast(L=180)`, 99% of boosts kept | 830.3 | 887.6 | 875.9 | 15/61 |
+| B — per-stock (literal `_side` port on `wz[j]`) | `B-veto(fast60)`, flat 12.8% of stock-days | 767.7 | 760.7 | 802.6 | 61/61 |
+| C — whole book (pooled IC) | all 8 variants | 830.3 | 888.5 | 876.8 | 0/61 (**inert**) |
+
+The mechanism, measured directly (`test_v7cand_double_ic_diag.py`) — the veto needs an edge whose
+sign is genuinely unstable, and only ALGO has one:
+- **ALGO vol feature**: fast IC mean +0.071 but **sd 0.101**, negative on 22% of days, crossing zero
+  13 times. The veto fires on **5.4%** of days — it is catching real sign flips in a
+  regime-dependent relationship, which is exactly why it earns its keep there.
+- **Idio book, pooled**: fast IC mean +0.0675 with **sd 0.0255**, range `[+0.0096, +0.1185]` —
+  **never negative on any of 704 days**, on either estimator. The two estimators disagree on **0**
+  days, so the book-level gate is inert by construction. This is a different animal from ALGO's
+  feature: the ridge refits daily and its edge is stably positive (consistent with the champion
+  staying IC-positive even in a synthetic momentum regime).
+- **Idio, per-stock**: ~90 observations per estimate gives SE ≈ 0.105 against a mean IC of +0.072 —
+  signal-to-noise **0.69**. A single name's trailing IC cannot resolve its own sign, so the 17.7%
+  disagreement rate is pure estimator noise; acting on it flattens ~13–20% of a full-conviction
+  book at random (−74 rmean), and the sign-flipping version is a catastrophe (−400 rmean).
+  Pooling across the 50 names is what raises signal-to-noise to 4.53 — and then there is nothing
+  left to veto.
+- At the pair level the veto can only *subtract* boosts, and subtraction is monotonically bad: 99%
+  kept → −0.9 rmean, 94% → −2.8, 91% → −6.1, 85% → −10.0. Same conclusion as the adaptive-`BOOST_K`
+  test — every pair surviving the shipped Bonferroni + `ic>0` + 480-day-history gates is worth
+  trading, so a second opinion only removes good boosts.
+
+**General rule this establishes:** a two-estimator agreement veto pays only where the edge's *sign*
+is regime-dependent AND each estimate has enough data to resolve that sign. The idio book fails both
+tests — its edge is stably positive, and per-name estimates are noise-dominated.
+
+### Follow-up: is the EW (20, 45) estimator itself any good on the idio side? — rejected, 0/19
+The test above only ever used `IC_EW_HL=(20,45)` as a *second opinion* (it could remove boosts,
+never add one), which says nothing about the estimator's own quality. `test_v7cand_ew_idio.py` asks
+the separate question — is exponential recency weighting at 20/45-day half-lives a better **primary**
+estimator than the flat equal-weighted windows the idio book uses? Replacements can go both ways.
+Four placements, 19 variants; **0 beat v7**, and the failure is *monotone in half-life* in all four:
+
+| placement | shipped | fastest tried | ← rmean → | slowest tried |
+|---|---|---|---|---|
+| **E1** boost IC gate (leader selection untouched) | flat 250d = **876.8** | `ew(20,45)` 865.4 | `ew(45,90)` 869.3 · `ew(87)` 874.2 · `ew(125,250)` 875.4 | `ew(87,174)/500` **876.9** (+20/−0 boosts = 0.4% changed; a tie, not a pass) |
+| **E2** leader-selection correlation (Bonferroni bar at n_eff) | flat, n=998 → **876.8** | HL=20, n_eff 58 → 789.2 | HL=45 782.3 · HL=90 799.4 · HL=250 826.3 | HL=500 864.0 |
+| **E3** ridge half-lives | (250,1000,500,2000) = **876.8** | (20,45) only → **392.5** | +(20,45) → 806.5 | +45 → 849.1 |
+| **E4** reversal leg | flat `REV_W=10` = **876.8** | HL=5 → 821.7 | HL=10 832.4 · HL=20 824.9 | HL=45 785.2 |
+
+Every idio estimator wants **more** memory, not less, and 20/45 is off by roughly an order of
+magnitude. The mechanism is the same one that sank the veto, seen from the other side: the ALGO
+leg's IC is genuinely non-stationary (sd 0.101, negative 22% of days, 13 zero-crossings), so a fast
+taper is tracking something real; the idio book's IC is stationary (pooled sd 0.0255, never negative
+in 704 days), so a fast taper adds variance to estimate a constant. Corollaries worth keeping:
+- The **COM-matched control** isolates taper shape from lookback length — `ew(87)` has the same
+  centre of mass as v7's flat 250-window and still loses 2.6 rmean. Where the underlying quantity is
+  stationary, a hard window is not just adequate, it is *better* than a taper of equal average age:
+  equal weighting is the minimum-variance estimator of a constant.
+- **E3 (20,45)-only collapsing to 392.5** is a sample-size wall, not a tuning miss: HL=20 leaves
+  ~29 effective observations to fit a 50-predictor ridge.
+- **E2 HL=500 posts NEW=905.9, the highest NEW anywhere in this file** — and OLD=797.8, rmean 864.0,
+  n_worse 45/61. Textbook single-window artifact, same shape as the rejected Spearman boost pool
+  (NEW 862.5 / OLD 755.4). Do not chase it.
+- The reverse direction (E1 half-lives *longer* than shipped) flattens out at v7's number rather
+  than beating it, so the flat 250-day gate sits at the top of the curve, not on a slope.
+
 ## 80-idea follow-up test queue: what else was tried and rejected
 After v3/v4 shipped, a further 80-idea batch was tested across four categories (parameter/mechanism
 refinements of the new boost pool, new signal features, portfolio-construction/sizing schemes,
@@ -379,6 +924,118 @@ above, everything else was rejected, reinforcing patterns established earlier th
   *average* next-day return across all stocks (a market-timing signal), not which stocks to
   prefer — a uniform per-stock tilt built from it has essentially zero effect on sign-based
   positions.
+
+## Where the score actually goes — the v7 budget (read this before proposing anything)
+`test_v7_leak_diagnostic.py` and `test_v7_algo_headroom.py` decompose the shipped book instead of
+testing a candidate. Four measurements that should constrain every future idea:
+
+**1. Score ≈ mean daily PnL. Variance is very nearly irrelevant.** v7 runs at annualised Sharpe
+**7.5**, so `frac = sr²/(sr²+1) = 0.983` — the Sharpe penalty costs only ~$15/day. Elasticities at
+this operating point: **+1% mean = +1.03% score, −1% stdev = +0.03% score. Mean is worth 30× a
+variance cut of the same size.** This retroactively explains every rejected sizing/risk idea in this
+file (Kelly, vol-targeting, drawdown throttles, cluster-neutral, confidence ramps): they all trade
+mean for variance at a 30:1 disadvantageous exchange rate. *Do not propose risk control here.*
+
+**2. The daily budget (NEW window, 750–1000):** idio gross **$726** (76%), ALGO gross **$225** (24%),
+commission **−$47** (idio $46.3, ALGO $0.4), net $904 → score 888.5. Zero-commission score is 936.0,
+so **any turnover-reduction idea whatsoever is capped at +47 (+5.2%)** — and only if it gives up
+literally no edge.
+
+**3. Both legs are already at maximum deployment.** ALGO runs at **95.1%** of its $100k cap and is
+**never flat** (0 idle days in 500); the idio book is at the $10k cap on all 50 names every day. Under
+a per-name dollar cap, sign-sizing is *provably* mean-optimal, so position construction is finished —
+there is no capital-allocation or sizing idea left with positive expected value. Confirmed
+empirically: ALWAYS-CAP on ALGO scores 869.4 (−7.4) and `COMBINE_GAIN` past 16 decays monotonically
+(20 → 875.5, 25 → 874.0, 40 → 871.0, 100 → 868.5), so 16 is the top of the curve, not a slope.
+
+**4. Per-dollar productivity is lopsided.** ALGO earns **23.6 bp/day** per deployed dollar against the
+idio book's **13.6 bp** (1.74×), at **1/116th** the commission ($0.4 vs $46.3/day), with correlation
+−0.07 between the legs. ALGO is the best capital in the book — it is simply capped by the rules at
+$100k, and it is already full.
+
+**Consequence: only three things can move the score at all** — idio sign accuracy (76% of gross),
+ALGO sign accuracy (24% of gross, ~free to trade), and commission (hard ceiling +5.2%). Nothing else.
+
+**Where adaptive machinery can pay.** Combining this with the double-IC findings above gives a rule
+for the whole file: an adaptive/gating mechanism needs *both* non-stationarity to track *and* enough
+data per estimate to resolve it. Measured on this data —
+
+| | non-stationary? | data per estimate | adaptive machinery? |
+|---|---|---|---|
+| ALGO leg | **yes** — IC sd 0.101, negative 22% of days, 13 zero-crossings | 1 instrument, full history | **yes** — this is where `_side`, the vol/momentum switch and `COMBINE_GAIN` all paid |
+| idio, pooled | sign-stable, low-variance (IC sd 0.0255, never negative in 704 days) — see caveat below | ~4500 obs, SNR 4.5 | nothing to adapt to |
+| idio, per-name | unresolvable | ~90 obs, SNR **0.69** | can't resolve its own sign |
+
+That is the whole reason the same gate works on ALGO and fails on the idio book, and it predicts
+which future ideas are worth the compute.
+
+**Formal check (`test_ic_stationarity_formal.py`), and a correction to the language above:** "non-
+stationary?" was originally called from summary stats alone (mean/sd/negative-day-count). Running
+actual ADF (H0: unit root) and KPSS (H0: stationary) confirms ALGO's IC is non-stationary — KPSS
+rejects stationarity outright (p=0.01), ADF can't reject the unit root either (p=0.20), both point
+the same way, consistent with the direct 22%-negative/13-crossing count. **Idio's pooled IC is
+genuinely ambiguous, not confirmed stationary**: ADF fails to reject a unit root (p=0.81, expected)
+but KPSS *also* fails to reject stationarity, only barely (p=0.089) — the two tests disagree rather
+than agreeing, so "stationary" oversold it. Likely a power artifact, not a wrong call: the IC is a
+90-day rolling estimate, so consecutive values share 89/90 of their underlying data, which mechanically
+induces heavy serial correlation regardless of the true process and is known to starve ADF of power
+against a highly persistent alternative — it hits both series, but only ALGO's swings are large enough
+to read as non-stationary despite it. Doesn't change any conclusion above (those rest on the direct
+sign-flip/disagreement counts, not on a unit-root classification) — only the label: idio's IC is
+"empirically sign-stable over this sample," not "confirmed stationary."
+
+## Lowering `BOOST_MIN_DAY` below 480 on the current v7 book — re-confirmed, still essential
+The original `SAFE_llboost.py` docstring diagnosed why the 480/500-day minimum-history gate is
+necessary against the *original* book (N=49 candidates, `IC_L=220`, `SCALE_W=500`). Since v3's
+candidate-pool restriction (39 names) and v7's retuned `IC_L=250`/`SCALE_W=1000` both change how the
+gate behaves, `test_v7_boost_min_day_200.py` re-ran the same question directly against the shipped
+v7 book (monkey-patching the real `V7.BOOST_MIN_DAY` global so `_pairwise_boost`'s own gate fires —
+no reimplementation) instead of assuming the old finding still applies.
+
+**It does, unchanged.** OLD (500–750) and NEW (750–1000) score identically (830.3/888.5) at every
+`min_day` from 150–500 — the grader's window starts after day 480 regardless, so unlocking earlier
+days can only ever hurt the rolling floor, never help the graded score:
+
+| min_day | rmean | rfloor | n_worse/61 |
+|---|---|---|---|
+| 480 (shipped) | 876.8 | **674.4** | — |
+| 300 | 863.7 | 652.1 | 34/61 |
+| 200 | 858.3 | 624.2 | 34/61 |
+| 150 | 857.2 | 607.9 | 34/61 |
+
+Worst single window (end_day=490): −61.4. Directly measured why: the Bonferroni bar shrinks from
+`|corr|>0.227` at day 198 to `0.147` by day 478 (more samples → looser bar relative to noise), so the
+earliest "significant" leaders are found on the thinnest, most permissive samples. An out-of-sample
+check (next-60-day same-sign hit rate for every stock-day boosted only because of the lower gate,
+never used inside the traded signal) confirms these are pure false positives: **49.6% — a coin flip**
+— over 52,680 observations, 1055 stock-days, 15/50 names. Same mechanism as the original diagnosis
+(Bonferroni controls false-discovery within one re-estimate, not across the ~15 sequential
+re-estimates made walking forward); v3/v7's other refinements don't touch it. `BOOST_MIN_DAY=480` is
+not a stale artifact of the old book — it is still exactly as load-bearing on the current one.
+
+## Why Bonferroni alone isn't enough, and why the fix isn't a better correction (H3, re-confirmed)
+`BOOST_MIN_DAY`'s docstring diagnosis and the `test_v7_boost_min_day_200.py` re-confirmation above
+both point at the same gap: Bonferroni correctly controls the false-positive rate of the **39
+simultaneous candidates on one day's search**, but says nothing about **repeated testing over time**
+— the same search re-run day after day as the file walks forward. A false-positive leader found on a
+thin sample doesn't just misfire once either: the correlation is estimated over a long trailing
+window, so it barely moves day to day, and a lucky discovery tends to keep clearing the bar (and
+trading with real size) for dozens of subsequent days.
+
+The natural statistically-motivated fix — require a leader relationship to persist for N consecutive
+days before trusting it, directly targeting the repeated-testing problem — was tested this session
+(`test_h3_stage2_backtest.py`, "H3 leader-identity-stability") and **rejected**: every `min_stab`
+threshold from 10–200 days *worsens* rmean monotonically (811.4 → 806.7 → 788.6 → 780.8), and,
+tellingly, **the rolling floor doesn't move at all** (563.8 unchanged at every threshold) — so a
+persistence gate doesn't even fix the specific failure mode it targets. A soft confidence-multiplier
+version (scale the boost by a pair's stability instead of a hard cutoff) fares no better.
+
+**Conclusion:** Bonferroni isn't the weak link — it's correctly solving the problem it was designed
+for. The gap is an orthogonal one (sequential/repeated testing over time), and the one principled
+attempt to patch it directly failed. The gate that actually works, `BOOST_MIN_DAY`, doesn't try to
+statistically distinguish good early discoveries from bad ones at all — it just refuses to search
+until the sample is already large enough that thin-sample false positives stop dominating, sidestepping
+the high-risk region rather than correcting within it.
 
 ## Synthetic stress test: how much does the 250-day score vary from pure sampling luck?
 `stress_test_synthetic.py` fits a one-factor market model + a parametric-bootstrap idiosyncratic
@@ -424,3 +1081,36 @@ days. Edit `MATCH_K` in `SAFE_llmatch.py`, `VOL_GAIN`/`IC_LOOKBACK` in `SAFE_llv
 k=1.0 = the 1:1 match (index takes exactly the book's predicted net-$ tilt): best rolling mean, high
 floor. Higher k trades old-window score for new-window score and erodes the floor — pick k on the floor.
 See panel 5 of `diagnostics.html`.
+
+## ALGO as an extra pairwise-boost leader candidate — rejected, small and net-negative where it fires
+`_pairwise_boost`'s leader search has only ever considered other idio names as candidates — ALGO is
+excluded even though it already sits inside the linear ridge as one of 51 predictors. The ridge only
+captures a *linear* ALGO→name relationship; the boost's own convex `sign(x)*(|x|/scale)^P` transform
+(validated elsewhere for idio-vs-idio pairs, e.g. the DUCT→AMRP relationship) is a structurally
+different hypothesis — a crash-beta/tail-sensitivity effect, untested here. Distinct from the
+rejected v17 ALGO crossover (which tested ALGO's own price pattern predicting ALGO's *own* next
+return, time-series); this tests ALGO's move predicting *other stocks'* next moves, cross-sectionally.
+
+`test_v18cand_algo_leader_boost.py`: added ALGO unconditionally as a 40th candidate leader
+(Bonferroni divisor 39→40 to match), every other boost mechanic identical. **Doesn't clear the bar**
+(against real SAFE_llboost_v10, sanity-checked to reproduce 871.0/912.6/909.8/709.7 first):
+
+| | OLD 501–750 | NEW 751–1000 | rolling mean | n_worse/61 |
+|---|---|---|---|---|
+| SAFE_llboost_v10 (baseline) | 871.0 | 912.6 | 909.8 | — |
+| stricter-divisor-only (control: divisor 40, no ALGO) | 869.8 | 915.5 | 909.1 | 32/61 |
+| ALGO-as-40th-leader | 869.8 | 912.2 | 908.6 | 41/61 |
+
+The control isolates the mechanism cleanly: OLD is *identical* between the control and the ALGO
+variant, meaning ALGO is never actually selected as a leader on that window at all — the entire OLD
+move is just the one-extra-simultaneous-test Bonferroni tightening, nothing to do with ALGO. ALGO
+*is* picked on ~10% of days from day 480+ (52/520), concentrated in the NEW window, and where it
+fires it costs **−3.3** relative to the control (915.5 → 912.2) — mildly net-negative, not neutral.
+**Conclusion:** ALGO's own move has no additional convex/nonlinear predictive value for other idio
+names beyond what the linear ridge already extracts from it. Consistent with the standing finding
+that the idio book's pooled IC is stable and already well-saturated (double-IC-veto section above) —
+there was no obvious missing piece here to find.
+
+(The stricter-divisor-only control's own OLD/NEW trade-off, +2.9 NEW for −1.2 OLD, is a separate,
+very marginal side observation — not investigated further since it doesn't clear the joint bar either
+and isn't the hypothesis under test.)
