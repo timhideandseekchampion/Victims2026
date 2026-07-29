@@ -222,8 +222,8 @@ def _algo_vol_shares(lpA, cur0, cap_dol):
         if icf is None: return None
         sf = 1.0 if icf >= 0 else -1.0
         if not IC_BLEND: return sf * fhv
-        ics = [_ic_ew(feat, hl, IC_EW_W) for hl in IC_EW_HL]
-        if any(x is None for x in ics): return sf * fhv
+        ics = [x for x in (_ic_ew(feat, hl, IC_EW_W) for hl in IC_EW_HL) if x is not None]
+        if len(ics) < len(IC_EW_HL): return sf * fhv
         ice = float(np.mean(ics))
         return (sf * fhv) if (ice >= 0) == (icf >= 0) else 0.0
 

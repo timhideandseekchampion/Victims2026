@@ -1114,3 +1114,586 @@ there was no obvious missing piece here to find.
 (The stricter-divisor-only control's own OLD/NEW trade-off, +2.9 NEW for −1.2 OLD, is a separate,
 very marginal side observation — not investigated further since it doesn't clear the joint bar either
 and isn't the hypothesis under test.)
+
+## Re-sweeping `BOOST_N_CANDIDATES` against the current best — still optimal at 39, but the
+## neighbor-stability story that justified it no longer holds
+`BOOST_N_CANDIDATES=39` (the pairwise boost's leader-pool size) was chosen in `SAFE_llboost_v3`/`v5`,
+swept only against the original `SAFE_llboost` baseline — before the beta-adjusted ridge target (v9)
+and the rank-stability blend (v10) existed. `_pairwise_boost` is unchanged code since v7 and operates
+only on raw idio returns, independent of `wz`, so there was little mechanistic reason to expect the
+optimum moved — but that's an assumption, not a result. `test_v19cand_boost_ncandidates.py` checks it
+directly against `SAFE_llboost_v10` (sanity-checked to reproduce 871.0/912.6/909.8/709.7 exactly at
+N=39 before trusting anything else): expensive precompute (ridge WZ, BLEND reversion, ALGO leg,
+rank-stability signal) is cached once since none of it depends on N; only the boost itself is
+recomputed per candidate value, swept N=15–50.
+
+**Still the best value — 0/21 alternatives beat v10 jointly, N=39 is the only one with n_worse=0/61:**
+
+| N | OLD 501–750 | NEW 751–1000 | rolling mean | n_worse/61 |
+|---|---|---|---|---|
+| 35 | 863.9 | 902.7 | 901.7 | 50/61 |
+| 37 | 855.9 | 882.0 | 899.6 | 44/61 |
+| 38 | 861.4 | 888.2 | 901.0 | 44/61 |
+| **39 (shipped)** | **871.0** | **912.6** | **909.8** | **0/61** |
+| 40 | 863.0 | 916.9 | 904.6 | 41/61 |
+| 41 | 859.0 | 915.1 | 902.3 | 50/61 |
+| 42 | 859.3 | 924.9 | 904.1 | 46/61 |
+
+So the direct answer to "does changing the boost pool size help" is no — nothing in a 21-point sweep
+from 15 to 50 improves on the shipped value.
+
+The more important finding is what this reveals about the *shape* around that optimum. The original
+v3 writeup described N=29→39 as "a genuine, monotonically improving region... unlike an isolated
+spike," with N=35–38 "also solid (n_worse 7–16/61)" and flagged only N=40's cliff as a known,
+accepted risk. Under the current v9/v10 baseline that plateau is gone: every neighbor from 35–42
+(except 39 itself) now sits at n_worse 41–50/61 — clearly worse, not "also solid." N=39 is no longer
+sitting on a gentle slope; it's an isolated spike surrounded by a cliff on both sides, the same
+overfitting-shaped pattern this repo rejected the Huber candidate and the `IC_EW_W=150` spike for
+elsewhere. It happens to be a spike at exactly the value already shipped, so there's nothing to change
+— but the original justification for trusting 39 (a stable, structural plateau) has quietly stopped
+being true as the rest of the book evolved around it, and should be read as a standing, unresolved risk
+rather than a settled one. Mechanistically this tracks the book's full-conviction sign-based sizing:
+adding or removing one marginal high-vol candidate from the leader pool occasionally changes *which*
+name is selected as the most-significant leader for a given idio name on a given day, which can flip
+that name's position sign outright — a small, continuous change in the candidate pool producing a
+discrete P&L jump on the days it matters, rather than a smoothly-varying effect that would average out
+across neighboring N.
+
+## An idio-side analog to the ALGO min-conviction deadband — rejected, 0/14, clean and decisive
+`SAFE_llboost_v8`'s ALGO deadband (hold yesterday's shares instead of resizing into a small,
+uncertain-sign combine target) was validated because ALGO's IC is genuinely non-stationary and its
+low-magnitude days were shown to be actually loss-making (−$81/day vs +$309/day elsewhere). The "v7
+budget" diagnostic argued the same trick shouldn't work on the idio book — pooled idio IC is
+sign-stable ("nothing to adapt to") and per-name IC is unresolvable (SNR 0.69) — but that was an
+inference from aggregate IC statistics, never a direct test of this specific mechanism. Tested it
+directly against `SAFE_llboost_v10` rather than trusting the inference (`test_v20cand_idio_deadband.py`,
+sanity-checked to reproduce 871.0/912.6/909.8/709.7 exactly with the gate off).
+
+Mechanism: per idio name per day, if `|wz_i|` falls under some fraction of that day's cross-sectional
+mean `|wz|` (a near-coin-flip combine target for that one name), hold or flatten instead of resizing.
+Two treatments (HOLD, FLATTEN) × 7 thresholds (0.05–0.50), gated off before day 480 (matching
+`BOOST_MIN_DAY`):
+
+| | OLD 501–750 | NEW 751–1000 | rolling mean | n_worse/61 |
+|---|---|---|---|---|
+| SAFE_llboost_v10 (baseline) | 871.0 | 912.6 | 909.8 | — |
+| HOLD, thresh=0.05 (mildest) | 788.8 | 866.1 | 861.4 | 52/61 |
+| FLATTEN, thresh=0.05 (mildest) | 800.6 | 865.2 | 868.0 | 50/61 |
+| HOLD, thresh=0.25 | 614.1 | 822.9 | 758.7 | 52/61 |
+| FLATTEN, thresh=0.50 (widest) | 680.7 | 722.9 | 766.0 | 52/61 |
+
+**0/14 configurations beat v10**, and every metric degrades monotonically as the threshold widens —
+even the mildest, narrowest gate (thresh=0.05, touching the fewest name-days) is already clearly
+worse. This isn't a close call.
+
+**Why, quantified the same way the ALGO writeup was:** at thresh=0.25 the gate touches 21.2% of
+name-days (5,511 of 26,000, day 480+) — not a rare edge case. Split by the shipped book's own realized
+$ PnL, low-conviction name-days earn **$13.79/name-day**; the rest earn **$16.36/name-day**. Both
+solidly positive. This is the mechanistic difference from ALGO: ALGO's low-conviction days were a
+genuinely different, loss-making regime (sign flipped, not just smaller). Idio's low-`|wz|` name-days
+are just a slightly weaker slice of the *same* positive edge, not a different regime — there's no bad
+subset to cut, so holding or flattening it only discards real edge for nothing in return. Directly
+confirms, rather than just infers, the "pooled idio IC: nothing to adapt to" line in the v7 budget
+table, and closes out the one gap in that table that hadn't been tested head-on.
+
+## 100-idea sweep against the current best — 0/100 shipped, one caught red-handed as an isolated spike
+Ran a workflow-orchestrated batch of 100 candidate ideas against `SAFE_llboost_v10`, split across ~20
+parallel subagents in two passes (the first pass lost 60 ideas to BLAS thread-contention under heavy
+concurrent load — those subagents backgrounded their scripts and returned a non-answer instead of
+waiting; re-run with single-threaded BLAS and no backgrounding, all 60 completed cleanly on the
+second attempt). Every idea followed this repo's standard convention: sanity-check reproduction of
+v10's exact numbers (871.0/912.6/909.8/709.7) before trusting any variant, pass bar = beats v10 on
+OLD+NEW+rolling-mean jointly, `n_worse`/61 reported. **Result: 0/100 beat v10.**
+
+**The one Stage-1 "pass," caught by Stage 2:** a `BETA_DEMEAN_W` resweep (350-650, 5 points) found
+W=550 clearing the joint bar (n_worse=8/61). A denser 23-point follow-up sweep (`test_batch100_A23_full.py`)
+found only 2/23 points pass at all (W=550 and W=575), both flanked on *every* side by worse-than-shipped
+neighbors — a jagged, non-monotonic response surface with no plateau, the same isolated-spike signature
+already rejected for Huber and `IC_EW_W=150` earlier this session. **Rejected** — exactly the failure
+mode the two-stage screen-then-verify process exists to catch.
+
+**Closest legitimate near-misses (not shipped, but worth remembering if revisited):**
+- **Two-hop transitive boost** (C43: if A leads B leads C, add A as a candidate leader for C): NEW+1.7,
+  rmean+0.3, rfloor unchanged, n_worse=0/61 — missed only because OLD was an *exact tie*, not strictly
+  beaten.
+- **Ridge interaction terms** (D55: name×ALGO features) is a genuine wash (n_worse=36/61); D56
+  (top-10 pairwise name×name features) gets the single largest NEW gain of the whole sweep
+  (912.6→923.9) but clearly overfits OLD.
+- **Regime-conditional `COMBINE_GAIN`** (E66) and a **learned per-name boost/rank-stability blend
+  weight** (G84) both missed by a single leg (rmean by 1.8, or NEW by 1.3) — flagged by their own
+  test agents as worth a denser follow-up sweep, not investigated further here.
+
+**Other findings worth keeping, independent of the shipping bar:**
+- **Statistically confirmed**: a paired bootstrap over trading days puts v10's total improvement over
+  the original `SAFE_llboost` at +$90.33/day mean, 53.0% win rate, 95% CI [22.61, 158.66] — excludes
+  zero, p=0.0095 (I92).
+- **Strict walk-forward re-check** (I88): refitting `RIDGE_A`/`BOOST_K`/`RS_WEIGHT` using only days
+  1-750 picks the exact combo already shipped, and forward-applying it reproduces the full-range
+  numbers exactly — reassuring against overfitting on the tested grid (caveat: only 2 `RIDGE_A` values
+  were tried in this quick check, not a full re-derivation).
+- **Edge concentration is not a growing trend** (I91): contradicts the natural-sounding guess from
+  earlier this session. v7→v8 (the ALGO deadband) is the lumpiest transition by far at 97.8%
+  concentration in its top-10 days, versus v8→v9's 19.0% and v9→v10's 40.2% — mechanism-specific, not
+  monotonically worsening.
+- **N=39 re-confirmed as a genuine isolated optimum, not a fixable artifact** (J99): averaging the
+  boost computed at N={35,39,43} to smooth over the spike found in the earlier `BOOST_N_CANDIDATES`
+  re-sweep makes things *worse*, not better — the spike is real, not a smoothing opportunity.
+- **18/50 idio names are structural "orphans"** (J98) — never selected as a boost leader or
+  follower-recipient across the graded window — and they underperform ($7.24/name-day vs $20.63 for
+  the rest). A real, unexploited structural fact, though no mechanism tested here successfully turned
+  it into edge.
+- **Adjacent-day flip-flops are common (22.8% of idio name-days) and net *profitable* as traded**
+  (H87: +$262,579 vs a −$40,211 counterfactual hold-steady) — directly answers "would a same-direction
+  settle filter help" with no, consistent with every other turnover-suppression idea this session.
+- **Genuine secular drift detected but not exploitable** (J100): a linear day-index feature survives a
+  vol-regime partial-correlation control (partial corr=0.785), but the naive mechanism built to trade
+  it (a uniform book-wide tilt) fails jointly — robs OLD/rmean to sometimes pay NEW. A real lead,
+  no working mechanism yet.
+- **Cross-sectional dispersion tilt is a mathematically enforced no-op** (B38, sharper than the
+  earlier "failed Stage 2" characterization): z-scoring a uniform, non-stock-differentiating vector
+  collapses it to exactly zero at every weight tested.
+
+**The other ~85 ideas** — parameter resweeps of every shipped constant (`RIDGE_A`, `HALF_LIVES`,
+`BLEND`, `REV_W`, `VOL_WIN`, `VOL_Z`, `IC_FAST`, `SWITCH_GAIN`, `IC_EW_HL`, `IC_EW_W`, `MOM_LB_SHORT/LONG`,
+`COMBINE_GAIN`, `DEADBAND_THRESH_FRAC/MIN_DAY`, `BOOST_K/IC_L/MIN_DAY/P/SCALE_W/ALPHA`,
+`BETA_DEMEAN_LAM`, `RS_SHORT_W/LONG_W/WEIGHT`); re-tests of previously-rejected mechanisms against the
+current baseline (Huber, RRR, predictor-shrink, Elastic Net, Kalman/RLS, signed boost, leader-stability,
+cluster-neutral, confidence-ramp sizing, GBM confirm-gate, beta-to-ALGO stability, PC2/PC3); new
+lead-lag variants (multi-leader averaging, cluster-restricted pools, distance correlation, graphical
+lasso, Granger causality, partial correlation, lag-2, time-decay); new model classes (logistic
+sign-classification, Student-t MLE, SVR, random forest, quantile regression, wavelet inputs,
+hierarchical ridge); and several more signal/portfolio ideas (decile momentum, kurtosis, cointegration
+pairs from `SAFE_combined.py`, continuous rank-stability, model-averaging v9/v10, flip cooldowns,
+commission-rounding sensitivity) — **all rejected cleanly**, most by a wide margin, several with the
+same "sharp isolated peak at the shipped value" shape recurring across nearly every parameter (RIDGE_A,
+BLEND, REV_W, VOL_WIN, IC_FAST, BOOST_P, BOOST_K, RS_LONG_W all showed this). Full per-idea numbers
+are in the `test_batch100_*.py` scripts and workflow journals; not reproduced here in full given the
+volume.
+
+**Bottom line: the book is currently sitting in a narrow, well-tuned local optimum on essentially
+every axis tested.** Combined with the earlier finding that another team scores ~1030 on the same
+window at similar variance, and that this gap is within one noise-floor standard deviation of pure
+sampling luck (per the synthetic stress test), the honest read is that closing further ground likely
+needs either a genuinely different signal family this 100-idea sweep didn't happen to hit, or accepting
+that some of the visible gap may not be closable at all.
+
+## A user-raised structural concern: no pooled detector, and a controlled change-point experiment
+A user pointed out, correctly, that `SAFE_llboost_v10` has **no pooled detector or shutdown mechanism**:
+the ridge ensemble re-learns purely from price history (equal-weight blend of 4 EWLS half-lives,
+250/500/1000/2000), and the pairwise boost's leader-*validation* step (trailing-250-day IC) can
+suppress a broken relationship but its leader-*selection* step uses a full, undecayed price history.
+Unlike `SAFE_lldollar.py`/`SAFE_combined.py` in this same directory (which already carry a champion-
+health validator + kill switch, see [[algothon-protection-stack]]), the llboost lineage never got that
+treatment.
+
+**Built a controlled change-point experiment to test this concretely** (`changepoint_synthetic.py` +
+`test_v11_changepoint.py`): calibrated a synthetic continuation from real `prices.txt` (beta, idio
+noise, ALGO's stochastic-vol process) with an EXPLICIT, KNOWN 20-pair lead-lag structure (rho=0.25)
+running for 1000 days, then broke it at day 1001 two ways -- **reverse** (same pairs, sign flipped)
+and **rotate** (same followers, genuinely new random leaders) -- and ran the ACTUAL
+`SAFE_llboost_v10.getMyPosition` walk-forward across both, checked across 4 seeds each:
+
+- The ridge ensemble is **more adaptive than the raw half-life-weight arithmetic implies** (a
+  re-fit weighted regression each day, not a frozen blend): it flips sign and holds within
+  **~15-40 days** after a clean reversal. Adapting to a genuinely NEW relationship (rotate) is
+  slower and less reliable -- some seeds never cleanly recovered within the 600 days tested.
+- The boost's trailing-250-day IC gate **suppresses** a broken pair reliably (18-20/20 tracked
+  pairs, within 600 days) -- but its full-history candidate-**selection** step essentially never
+  finds the new correct leader within 600 days (0-1/20 pairs, across every seed tested) -- confirmed
+  exactly as the user suspected: linear (sample-count) dilution, not exponential decay, so a new
+  regime needs a comparable day-count to the ENTIRE pre-change history before it can win an
+  unweighted argmax.
+
+**CORRECTION (found while stress-testing the fix below):** the PnL/oracle numbers first reported
+here were computed with an off-by-one indexing bug in the test harness (`walk_pos_idio` stored each
+day's position one column earlier than the scoring loop expects) -- verified concretely: real
+`prices.txt` only reproduces the documented 871.0/912.6 with the corrected indexing; the buggy
+version silently produced deeply negative garbage scores that happened to still look directionally
+plausible. **Re-run with corrected indexing** (`test_v11_changepoint.py`, current version):
+- Reverse: the idio-only book DOES lose real money post-change, ~$180k-$280k cumulative over the
+  post-change window (smaller than first reported, but still a genuine loss); oracle gap ~$680k-$840k.
+- **Rotate: the idio-only book stays net POSITIVE post-change (+$15k to +$121k), not negative.** The
+  ~$360k-$400k gap to the oracle is pure opportunity cost (the book still trades profitably, just
+  worse than an unrealistic perfect-foresight comparison) -- not an active loss the way reverse is.
+  This is a materially different, more nuanced picture than "the book loses $400k-$1.1M in both
+  scenarios" as first stated, and changes what kind of fix rotate-mode actually needs (see below).
+
+## SAFE_llboost_v11.py: an idio kill switch, and an honest account of what it does and doesn't fix
+Built `SAFE_llboost_v11.py` = v10 + a kill switch on the final traded idio signal, in response to the
+change-point finding above. Two trigger designs were tried, not just the first idea kept:
+
+1. **First attempt**: ported `SAFE_lldollar.py`'s `_kill` verbatim (IC t-stat < -3.0, sustained 10
+   consecutive days, ROT_W=60). Verified safe (0/904 real-data false-positive kill days) but weak.
+   Diagnosis: a rotation degrades the old relationship to near-zero NOISE, not a confidently negative
+   IC -- a significance test structurally can't catch "edge is gone", only "edge is actively hostile".
+2. **Adopted instead**: a trailing-summed realized-PnL-sign trigger (ROT_W=60, KILL_P=1, no
+   persistence delay -- flatten today if the trailing 60-day sign(forecast)·realized-return sum is
+   negative, re-evaluated fresh every day). This directly reuses the lesson already shipped in
+   `algopart2/SAFE_rotate.py` + `SAFE_live.py` (see [[algothon-protection-stack]]: "a more sensitive
+   switch than the old IC-significance gate... captures a real regime far faster"). A narrower
+   ROT_W=40 was also tried and rejected -- it introduces 7 real-data false-positive kill days, unlike
+   ROT_W=60's clean 0.
+
+**Validated** (`test_v11_changepoint.py`): real prices.txt (1000 days) -- byte-identical positions to
+v10, 0/904 kill days. **Numbers below are corrected after the indexing-bug fix above** (superseding
+an earlier, wrong report of 34-42%/3-23%):
+
+| | reverse (sign flip) | rotate (new leader) |
+|---|---|---|
+| frac. of transition loss recovered, per seed | 22.5-28.6% | -5.5% to +1.7% |
+| mean across 4 seeds | ~25% | ~-1.5% |
+
+**Honest reading, corrected and less flattering than first reported:** the kill switch is a real,
+validated improvement for the reverse (actively-wrong-signed) failure mode -- recovers roughly a
+quarter of that loss, cleanly, on real data. **For the rotate (edge-decays-to-noise) failure mode it
+is a wash and occasionally mildly harmful** (2 of 4 seeds: v11 worse than plain v10) -- because, per
+the correction above, v10 alone isn't actually losing money in that scenario; a PnL-sign trigger
+flattens on trailing-negative windows that occur even in a still-net-profitable book, forfeiting real
+edge without preventing a real loss. This makes sense mechanistically once you see the correction:
+a defensive flatten is the right tool for "actively hostile," not for "quietly underperforming its
+own potential." It does **not** address the boost's slow leader-reselection at all -- that remains
+open, and is the more appropriate fix for the rotate scenario specifically (see below). Only one
+synthetic calibration (rho=0.25, 20 pairs) was checked. Numbers can vary by a couple percentage
+points run-to-run (floating-point/BLAS-threading noise, already noted elsewhere in this file) but the
+qualitative reverse-helps/rotate-doesn't split reproduced consistently across both the original and
+corrected runs.
+
+## Stress-testing the boost's slow leader-reselection, and a candidate fix with a real tradeoff
+Two follow-up questions, given the rotate-mode finding above shows the kill switch isn't the right
+tool there: (1) is the reselection gap actually as bad as it looked, or does it resolve given more
+runway? (2) if real, can the candidate-selection mechanism itself be fixed?
+
+**(1) Severity, confirmed via extended runway.** The 600-day window used above wasn't long enough to
+see the eventual outcome. Extending to up to 4000 post-change days (cheap: just the raw correlation
+dynamics, no ridge/boost machinery needed) shows the new true leader's full-history correlation
+*does* eventually overtake the old one for all 20/20 tracked pairs in both seeds tested -- but the
+median crossover lands around **~1000-1200 days post-change**, with a long tail out to 3000-4000,
+matching the dilution math almost exactly (a new regime needs a day-count comparable to the ENTIRE
+pre-change history, here 1000 days, before an unweighted full-sample argmax can flip). For any
+tournament window in the 500-2000 day range, this is effectively "too slow to matter" even though it
+technically isn't "never" -- confirming the severity, not just the existence, of the gap.
+
+**(2) A fix was tried: exponentially-decayed candidate-selection correlation** (same half-life
+weighting style as the ridge ensemble's own `_ewls_ridge`, applied to the boost's leader-selection
+step only -- the trailing-250-day validation/suppression gate is untouched). A hard trailing WINDOW
+was tried first and rejected outright: real-data performance degrades monotonically below ~750 days
+(e.g. rmean 742→670 at a 250-day window) -- a hard cutoff throws away exactly the long-run evidence
+that makes genuine, stable relationships significant in the first place. Exponential decay is a
+meaningfully better mechanism -- it doesn't discard old evidence, just downweights it -- and:
+- **Reselection speed improves substantially.** At half-life=1000 (matching the ridge ensemble's own
+  longest half-life), median reselection time drops to roughly **~700-900 days** (from ~1100+ for the
+  undecayed baseline) and 1-2 more of the 20 tracked pairs resolve within any given horizon.
+  Half-life=500 is faster still (~400-500 day median) but costs more real-data quality (below).
+- **But real-data cost is NOT free, and the initial 3-point summary (OLD/NEW/rmean) hid it.** Checked
+  against this file's own `n_worse`-of-61-rolling-windows bar: half-life=2000 shows OLD/NEW/rmean all
+  at-or-above the undecayed baseline (724.6/693.0/745.6 vs 717.4/688.1/742.0) *but* **14/61 rolling
+  windows are worse**; half-life=1000 similarly has better-looking averages but **27/61 windows
+  worse** (a near coin-flip); half-life=750 is clearly worse (46/61). None of this shows up in the
+  averaged OLD/NEW/rmean view -- it only appears once every rolling window is checked individually,
+  the same trap this file has flagged before ([[ic-vs-score-lesson]]-adjacent: aggregate metrics can
+  mask real per-window inconsistency).
+
+**Not shipped -- this is a genuine tradeoff, not a clean win, and is left as an open decision
+rather than a unilateral call:** faster rotate-mode recovery is real and substantial, but it comes
+with meaningfully more real-data rolling-window volatility than anything else shipped in this file
+(every prior version's headline change was either `n_worse=0/61` or, at worst, a minority of windows
+worse with every other metric improving -- 14-27/61 is a different, larger scale of inconsistency).
+Whether that trade is worth taking depends on how much weight to put on a tail-risk scenario (a
+genuine rotation-type regime break) that hasn't been observed in the real data at all, versus a
+known, immediate cost to the already-validated real-data score's consistency. (`SAFE_llboost_v12.py`
+was later taken by an unrelated, independently validated change -- v11's kill switch + a post-jump
+fade, see below -- so if this decayed-reselection idea is picked up later, it should ship as `v13`
+or later, not `v12`.)
+
+## A second, independent ~50-idea signal search — one validated, shipped as `SAFE_llboost_v12.py`
+Run in parallel with (and without visibility into) the 100-idea sweep above -- same spirit, different
+organization: ~50 hand-designed hypotheses grouped into 7 batches by family, each swept through a
+shared, verified backtest harness (`_v10_harness.py`, asserted on import to reproduce v10's exact
+871.0/912.6/909.8/709.7) before anything was trusted. Bar and convention identical to the rest of this
+file (beats v10 on OLD+NEW+rolling-mean jointly, `n_worse`/61 reported).
+
+**Rejected, batch by batch:**
+- **Leader-*identity* extensions** (two-hop lead-lag, chain-length confidence multiplier, mutual/
+  reciprocal leader pairs -- 8 configs): 0/8. Notable: requiring a leader relationship to be mutual
+  AND independently Bonferroni-significant in both directions extinguishes literally every candidate
+  pair in this data (0/26,000) -- "mutual-only" degenerates to the boost-off ablation.
+- **Peer-*aggregation* extensions** (weighted top-3 multi-leader blend, peer-consensus broadcast,
+  leader-surprise, correlation-cluster momentum -- 10 configs): 0/10. Near-miss: the multi-leader
+  blend improved OLD and rmean with n_worse=12/61, but NEW dropped too far to pass -- diluting the
+  boost across several leaders trades NEW-period edge for OLD-period robustness.
+- **Alternative leader-*selection* dependence metrics** (asymmetric-by-direction, decayed multi-day,
+  Granger-style, split-sample validation, distance correlation, mutual information, Kendall's tau,
+  tail-dependence, partial-correlation-vs-ALGO -- 9 configs): 0/9, none close. Plain Pearson
+  correlation (shipped) beats every alternative tried; mutual information is the clear worst
+  (NEW collapses to 580.7).
+- **Own-series lag/autocorrelation structure** (point autocorrelation at lags 2/3/5/7, a genuine
+  **VAR(2) ridge extension** -- doubling the predictor set to include lag-2 returns, streak length,
+  5-day acceleration, a variance-ratio reversion-strength gate, an AR(1)-half-life sizing gate -- 27
+  configs): 0/27. The VAR(2) result is a clean, structurally meaningful negative: adding lag-2
+  predictors makes the *raw* ridge forecast markedly worse (rmean 536.0 vs the lag-1-only 746.8,
+  before boost/reversal/rank-stability are even added) -- doubling the parameter count without enough
+  data to estimate it hurts, not just fails to help.
+- **Higher-moment and cross-sectional relative-value signals** (kurtosis, vol-of-vol, post-jump drift
+  as a continuous z-score, tail-co-exceedance, forecast-self-relative z, correlation-graph eigenvector
+  centrality, an ordinal-rank version of rank-stability, volatility dispersion, same-day consensus
+  deviation, a multi-horizon rank-averaged momentum composite -- 10 ideas, several screened out at a
+  cheap raw-IC check before backtesting): 0/10. `forecast-self-relative-z` had a genuinely significant
+  raw IC (+0.0232, p<1e-6) but still lost the backtest -- another confirmation of this file's own
+  30:1 mean-vs-variance elasticity finding. Centrality-as-boost-multiplier was the closest miss
+  (n_worse=0/61) but didn't clear OLD/rmean strictly.
+- **Rank-stability mechanism variants + ALGO-regime cross-leg coupling** (triple-timeframe
+  confirmation, trading the trend-*agreement* case as momentum instead of only ever fading
+  disagreement, severity-scaled fade, a residual-based crossover; `BOOST_K`/`RS_WEIGHT` scaled by
+  ALGO's own vol regime, an ALGO fast-IC sign bias nudging idio `wz`, idio's own pooled IC fed back
+  into the ALGO leg's gain -- 88 configs): 0/88. The idio→ALGO reverse-coupling's "switch" placement
+  turned out to be inert by construction (`SWITCH_GAIN`'s branch is dead code once `VOL_COMBINE=True`
+  reliably supplies a momentum sub-signal); the ALGO-sign-bias idea fails for a clean mechanistic
+  reason -- it directly fights the beta-demean step, which exists specifically to strip common-mode
+  market exposure back out of the idio target.
+- **Volatility/event-conditional signals and confirmatory diagnostics**: a static per-name
+  vol-tercile trading filter (decisively rejected, rmean as low as 301 when isolating the bottom
+  tercile -- concentrating by name-level vol destroys diversification value); a boost-leader-vol-level
+  split (diagnostic only -- next-day hit-rate is flat at ~52% across low/mid/high leader-vol
+  terciles, no exploitable split); up/downside volatility asymmetry (rejected at every weight); a
+  multi-name co-crash trigger (only 34 qualifying response-days fall in the graded window -- too rare
+  to matter, and the one response tried was net negative anyway); a boost/rank-stability sign-
+  disagreement damping gate (disagreement is only 3.2% of eligible stock-days here, vs. 48% for the
+  analogous, already-rejected ALGO-side `sig`/`msig` gate -- genuinely much rarer, but still net
+  negative); a half-life re-verification (confirmed `HALF_LIVES=(250,500,1000,2000)` is still exactly
+  optimal, nothing drifted); a day-of-week check (no signal, as expected on a synthetic panel).
+
+**The one validated idea: a post-jump fixed-size fade.** On any idio name whose most recent daily
+return exceeds `FADE_K_SIGMA=2.0` times its own trailing `FADE_W=40`-day realized stdev (computed
+strictly *before* that return -- fully causal), add a fixed-size fade against the move,
+`FADE_EXTRA_W=0.06 * (-sign(that return)) * mean(|wz|)` that day -- a discrete, event-triggered
+overlay, distinct from the existing *continuous* 10-day reversal leg (`BLEND=0.3, REV_W=10`). Fires
+on ~5% of all name-days -- broadly distributed, not a handful of lucky days. **56/140 neighbor
+configs** in a `W∈{30..50} × K_SIGMA∈{1.75..2.5} × EXTRA_W∈{0.02..0.08}` grid clear the strict bar --
+a genuine plateau, the same standard this file already holds every other shipped mechanism to (and
+the opposite shape from the `BETA_DEMEAN_W=550` isolated spike caught above).
+
+| | OLD 501-750 | NEW 751-1000 | rolling mean | rolling floor | n_worse/61 |
+|---|---|---|---|---|---|
+| SAFE_llboost_v10 (real `getMyPosition`) | 871.0 | 912.6 | 909.8 | 709.7 | -- |
+| **+ post-jump fade only** | **885.8** | **913.8** | **917.3** | **720.7** | **0/61** |
+
+Confirmed through the *real*, sequential `getMyPosition` walk-forward (`validate_postjumpfade_full.py`),
+not just the sweep -- numbers match the harness to the decimal. Positions change on only 40/852
+graded-eligible days; NEW-window commission moves by +$12 on ~$11,624 (negligible). Honest caveat:
+the *graded-window* (NEW) gain is modest, +1.2 -- the larger gains are OLD (+14.8) and the rolling
+floor (+11.0). Real and useful, not a blowout.
+
+**Shipped as `SAFE_llboost_v12.py` = `SAFE_llboost_v11.py`'s kill switch + this fade, combined.** The
+fade is wired into `v11`'s own `_idio_signal` helper (the factored-out "full traded idio forecast"),
+immediately after the rank-stability blend -- so the kill switch's trailing-PnL trigger automatically
+evaluates the PnL of the signal *including* the fade, no separate wiring needed. On real
+`prices.txt` the two mechanisms don't interact at all: v11's kill switch already fires 0/904 days
+(confirmed again here), so v12 == "v10 + fade" exactly, to the decimal, on every metric
+(`validate_llboost_v12_full.py`). The two remain genuinely orthogonal mechanisms -- one watches
+trailing realized PnL sign at the whole-book level, the other watches same-day per-name return
+magnitude -- and combining them doesn't change either one's own documented properties (the kill
+switch's reverse-helps/rotate-doesn't split from the section above is unaffected; it was never
+re-validated under the synthetic change-point experiment with the fade present, only confirmed to
+compose cleanly on real data).
+
+**Everything else** (parameter resweeps and mechanism variants not itemized above -- several dozen
+more configs across the same 7 batches) was rejected the same way, most by a wide margin. Full
+per-idea numbers are in `test_batch100_catA_leader_identity.py`, `test_batch100_catA_peer_aggregation.py`,
+`test_batch100_catB_altmetrics.py`, `test_batch100_catC_lag_structure.py`,
+`test_batch100_catDE_moments_relval.py`, `test_batch100_catFG_rankstab_regime.py`, and
+`test_batch100_catHIJK_vol_event_misc.py`.
+
+## SAFE_llboost_v13.py and v14.py: gated boost fallback + momentum/xsac insurance -- a mixed result, NOT a clean ship
+Two more files built on top of v11's kill switch (2026-07-29): `SAFE_llboost_v13.py` adds a GATED
+fallback to `_pairwise_boost` -- for any follower whose full-history candidate-selection path
+contributes zero that day, try an exponentially-decayed candidate search (`BOOST_SEL_FALLBACK_HL=1000`)
+before giving up, targeting the boost's slow full-history leader-reselection gap identified in v11's
+own change-point work above. `SAFE_llboost_v14.py` = v11's kill switch + v12's post-jump fade + v13's
+gated boost fallback merged, PLUS a NEW momentum/xsac insurance layer ported from
+`SAFE_lldollar.py`/`SAFE_rotate.py`'s `_pick_at`/`_choose`/`xsac` validator (PnL-sum "champ sick" check
++ `FALLBACKS=(mom, momJT, residMom)`, no `tsrev`/`pairs` per the already-established negative results
+in [[algothon-protection-stack]]).
+
+**Real prices.txt (`compute_diagnostics.py`, OLD 501-750 / NEW 751-1000):**
+
+| | OLD | NEW | rmean (61 windows) | rfloor | n_worse/61 vs v11 |
+|---|---|---|---|---|---|
+| v10 | 871.0 | 912.6 | -- | -- | -- |
+| v11 (kill switch) | 871.0 | 912.6 | 909.8 | 709.7 | -- (identical to v10, 0/904 fires) |
+| v12 (+ fade, shipped) | 885.8 | 913.8 | -- | -- | -- |
+| **v13 (+ gated boost fallback)** | 872.7 | 920.3 | **910.6** | 709.7 | **25/61 worse, 27/61 better** |
+| **v14 (v11+v12+v13 + insurance)** | **887.4** | **921.5** | -- | -- | -- |
+
+**v13 does NOT clear this repo's own bar, despite attractive headline numbers.** The fallback engages
+on 28/904 real days (3.1% -- NOT the "never triggers" case the file's own docstring flagged as the
+easy, provably-safe outcome), and OLD/NEW/rmean all nominally beat v11 -- but **n_worse=25/61,
+n_better=27/61 is a coin flip**, the identical failure signature already rejected twice earlier in
+this file (the `BETA_DEMEAN_W=550` isolated spike, and the exponentially-decayed candidate-selection
+idea at 14-27/61 worse): an aggregate-metric improvement that dissolves into noise-level
+per-window inconsistency. **Rejected as a clean win** by this file's own standard, even though nothing
+here is a bug -- it's exactly the trap the two-stage screen-then-verify convention exists to catch.
+
+v14's real-data numbers are the best of all 14 versions (887.4/921.5), and combine v12's and v13's
+real-data deltas almost exactly additively (871.0+14.8+1.7=887.5≈887.4; 912.6+1.2+7.7=921.5 exactly)
+-- confirming the momentum/xsac insurance layer is silent on real data as designed (validator picks
+`champ` every day), and that v12's fade and v13's boost fallback don't interact. But v14 inherits
+v13's coin-flip rolling-window problem wholesale (same underlying mechanism), so it inherits the same
+"not a clean win" verdict on real data.
+
+**Change-point experiment (`changepoint_synthetic.py`, reverse=sign-flip / rotate=leader-reassignment,
+4 seeds, frac. of the transition's oracle-gap PnL recovered vs plain v10):**
+
+| | reverse (mean) | rotate (mean, v13/v14's actual target) |
+|---|---|---|
+| v11 (kill switch only) | 25.1% | -1.5% |
+| v13 (+ gated boost fallback) | 25.0% (wash vs v11, not its target) | -0.7% (nudges positive, stays net negative) |
+| v14 (+ momentum/xsac insurance) | **28.0%** | -0.2% (still net negative) |
+
+Rotate is v13's actual target scenario (slow full-history leader-reselection) and it's still a wash
+there for both v13 and v14 -- a small, consistent-direction nudge (every v14 seed but one improves
+over v13), never flipping to a net positive. Neither file fixes the rotate-mode gap identified in
+v11's own change-point section above.
+
+**The reverse-mode number is a real surprise, investigated rather than taken at face value**
+(`test_v14_reverse_mechanism.py`): v14's docstring explicitly pre-registered an expectation that the
+momentum/xsac insurance layer should be a WASH on this harness (a plain-numpy pre-check found
+mom/momJT/residMom statistically indistinguishable from noise against this exact pairwise-break
+generator) -- but `test_v14_changepoint.py` showed the layer picking a non-champ fallback on 39-47%
+of post-change reverse-mode days, clearly not inert. Built a counterfactual that is IDENTICAL to
+v14's actual traded position on every day except days where `_choose` picked a fallback and `_kill`
+hadn't already flattened it -- on those specific days only, flatten instead of trading the fallback,
+isolating "the fallback signal has real edge" from "any departure from a known-bad champion helps."
+
+| seed | v14 actual | flatten-fallback-only counterfactual | delta |
+|---|---|---|---|
+| 123 | -9,460 | -40,045 | +30,585 |
+| 124 | -20,079 | -18,632 | -1,447 |
+| 125 | -15,383 | -39,070 | +23,687 |
+| 126 | 1,453 | -37,604 | +39,057 |
+| **mean** | **-10,868** | **-33,838** | **+22,970** |
+
+3/4 seeds show the traded fallback beating flatten-only by tens of thousands of dollars; the 4th is
+roughly neutral (noise-level relative to the ~500k oracle scale). **Conclusion: the reverse-mode gain
+is real, not a mirage** -- the fallback signals DO carry usable edge here, contradicting the earlier
+unconditional pre-check. Mechanism: `_choose`/`_kill` only ever trade a fallback once the PnL-sum/xsac
+detector has confirmed champ is sick, which apparently selects for exactly the windows where the
+fallback edge is live -- an unconditional IC/PnL probe over the whole post-change period dilutes that
+same edge with noise from periods where it isn't needed. **Same family of trap as
+[[ic-vs-score-lesson]]** and the leader/follower pair-signal-IC re-derivation earlier in this
+directory's memory: the conditional quantity a mechanism actually trades can look completely
+different from an unconditional probe of the "same" relationship.
+
+**Trend-regime test** (`test_v14_trend_regime.py`, momentum/flip/noise injection ported from
+algopart2/`stress_momentum.py`, idio-only cumulative PnL over a 150-day injected window, v10 vs v14 vs
+a pure-cross-sectional-momentum reference book):
+
+| regime (injected-window lag-1 xsectional autocorr) | v10 (none) | v14 (insurance) | pure_mom (upper bound) |
+|---|---|---|---|
+| momentum (+0.372) | 210,281 | **672,286** | 708,939 |
+| flip/whipsaw (+0.095) | 193,893 | **144,715** | 115,648 |
+| noise (-0.014) | -16,174 | -16,161 | 8,847 |
+
+**Momentum: a real, large win** -- v14 captures ~95% of the theoretical upper bound (672k vs 709k),
+massively ahead of doing nothing (210k); switches off champ 140/150 days, 0 kill days. **Flip/whipsaw:
+a genuine cost, not a wash** -- v14 is WORSE than plain v10 (144,715 vs 193,893, giving up ~$49k)
+despite beating the naive pure-momentum reference; this is the honest tradeoff the file's own docstring
+flagged to watch for. **Noise: statistically flat** between v10/v14, but the kill switch fires 43/150
+days here -- far above the 0/904 real-data bar this repo holds every gate to (synthetic-only regime,
+but a real flap-rate signal, not nothing).
+
+**Flap rate** (state transitions between {champ, mom, momJT, residMom} x {killed, not-killed} per
+day, `test_v14_changepoint.py`): 35-55/599 days in reverse mode (6-9%), 8-36/599 in rotate mode
+(1-6%) -- the tension the docstring flagged between `_choose`'s ROT_P=5-day persistence and `_kill`'s
+no-persistence trigger is real, not negligible, though it didn't visibly hurt the reverse-mode PnL
+result above.
+
+**Bottom line: neither v13 nor v14 is a clean ship by this file's own established bar.** v13's
+real-data gain is coin-flip-inconsistent (25/61 worse) -- the same rejected failure mode as two
+earlier ideas in this file. v14 adds a genuine, now mechanistically-confirmed momentum-regime win and
+a real (not spurious) reverse-mode improvement, but carries a real whipsaw-regime cost, an unresolved
+rotate-mode wash, and a non-trivial flap rate. Not rejected outright either -- the momentum-regime and
+reverse-mode results are real, validated gains against threats this repo hadn't specifically tested for
+the llboost lineage before ([[algothon-protection-stack]]'s protection stack was built for the
+lldollar/rotate lineage only). Left as an open decision rather than shipped unilaterally, consistent
+with how v11's rotate-mode decayed-reselection tradeoff was handled above: real upside on one axis,
+real cost on another, no single clean number to point to.
+
+## SAFE_llboost_v15.py: v12 + the momentum/xsac insurance layer, WITHOUT v13 -- the strongest validated candidate so far
+Since v13's real-data coin-flip problem is its own mechanism (not an interaction with the insurance
+layer -- v14's real-data numbers combine v12's and v13's deltas exactly additively, see above), built
+`SAFE_llboost_v15.py` = `SAFE_llboost_v12.py`'s exact ridge+plain-boost+fade, PLUS v14's Part B
+momentum/xsac insurance layer verbatim, DELIBERATELY dropping v13's gated decayed-selection boost
+fallback entirely. Hypothesis: keep the insurance layer's two genuine wins (momentum-regime survival,
+the now-confirmed-real reverse-mode edge) without inheriting v13's real-data inconsistency. Validated
+(`test_v15_insurance_only.py`) against v10/v12 (recorded) and v14 (recorded):
+
+| check | v15 result | vs v14 (recorded) |
+|---|---|---|
+| Real data (OLD/NEW/rmean/rfloor) | 885.8 / 913.8 / 917.3 / 720.7 | byte-identical to v12: **0/904 days differ, n_worse=0/61** |
+| Change-point reverse (mean frac saved) | **28.2%** | v14: 28.0% -- unchanged |
+| Change-point rotate (mean frac saved) | -0.9% | v14: -0.2% -- slightly worse (missing v13's ~1%-of-days contribution), still in the same near-zero bucket as v11/v13/v14 |
+| Trend-regime momentum (150d) | 672,934 | v14: 672,286 -- unchanged |
+| Trend-regime flip/whipsaw (150d) | 145,981 | v14: 144,715 -- unchanged, same known cost |
+| Trend-regime noise (150d) | -22,234 | v14: -16,161 -- **worse** |
+
+**The hypothesis held on the two axes that mattered most.** Real data is byte-identical to v12 --
+this is the clean win v13 never achieved (n_worse=0/61, not 25/61), inherited for free rather than
+re-swept. The reverse-mode gain (28.2% vs v14's 28.0%) is fully preserved, confirming (independently
+of the counterfactual analysis above) that it comes entirely from the insurance layer, not v13's
+fallback. The momentum-regime win and the whipsaw cost both reproduce unchanged, since neither
+involves the pairwise-boost mechanism v15 removed.
+
+**One real, if minor, new finding: the noise-regime result is worse (-22,234 vs v14's -16,161), not
+just noise** -- same seed, same generator, so the difference is mechanistic: the champion's own PN
+series shifts slightly on the ~1% of days where v13's fallback would have engaged, which perturbs the
+path-dependent kill-switch trigger timing (recall the kill switch is a threshold on a trailing PnL
+sum, re-evaluated fresh every day with no persistence) enough to land on a worse day in this
+already-flagged-fragile scenario (v14 itself over-fires its kill switch 43/150 days here, far above
+the real-data 0/904 bar). Not a new failure mode -- a different realization of the one already known.
+
+**Verdict: the best-validated candidate from this session.** Real data exactly as safe as the
+already-shipped v12 (not a re-sweep, a mathematical consequence of dropping the one problematic
+piece), plus both of v14's genuine synthetic-scenario wins, at the cost of the same two tradeoffs
+already documented above (whipsaw cost, rotate-mode still open) and a marginally worse noise-regime
+number. Not shipped as SAFE_llboost's default here -- still a decision about how much weight to put on
+protecting against regime types (momentum, edge-decay) that have never been observed in this repo's
+real data, same framing as the rest of this section.
+
+## Two follow-up investigations into what's still NOT working
+**Why does the rotate-mode gap stay open across v11/v13/v14/v15?** Instrumented `_pairwise_boost`
+(`investigate_rotate_gap.py`, verbatim copy of v13's logic with a fill-source counter, NOT a
+modification of the shipped file) to directly count, per follower-day, whether the full-history path,
+the decayed fallback path, or neither filled the boost. **The decayed fallback path engages on only
+0.9-1.3% of follower-days in rotate mode and 0.0-0.9% in reverse mode** (4 seeds each) -- it almost
+never gets a turn, which is the real reason it barely moves the rotate-mode number regardless of
+whether it would help when it fires. Root cause is structural, not a tuning slip: the decayed path's
+significance threshold is computed from the *effective* sample size under exponential decay-weighting,
+which is always smaller than the full-history path's raw sample count -- a smaller effective N means a
+*stricter* Bonferroni-corrected bar, so decay-weighting's recency benefit is partly cancelled by a
+harder significance test working against it. A real fix would need to loosen the decayed path's own
+threshold specifically (trading more false positives there for more chances to fire), not something
+tried live in this session.
+
+**Why does the insurance layer lose money in the flip/whipsaw regime?** Tracked day-by-day
+chosen/killed state against the known 25-day flip schedule (`investigate_whipsaw.py`, single version,
+single regime). Broken down by 25-day block:
+
+| block | regime | v10 PnL | v14 PnL | delta | non-champ% |
+|---|---|---|---|---|---|
+| 0 | momentum | 33,715 | 76,115 | +42,400 | 60% |
+| 1 | reversion | 42,488 | -34,990 | **-77,478** | 72% (still majority `mom`) |
+| 2 | momentum | 31,665 | 33,058 | +1,394 | 0% |
+| 3 | reversion | 43,769 | 42,807 | -961 | 0% |
+| 4 | momentum | 8,776 | 19,269 | +10,493 | 16% |
+| 5 | reversion | 33,480 | 8,455 | -25,025 | 32% |
+
+**Confirmed exactly as suspected: the insurance layer's own detection lag (ROT_W=60/XSAC_W=40
+trailing windows, ROT_P=5-day persistence) is slower than this generator's 25-day flip period.** Block
+1 is the clearest case -- the regime has already flipped back to reversion, but the layer is STILL
+majority-trading the `mom` fallback (72% of days) because its trailing window is still dominated by
+the just-ended momentum block, actively fighting the new regime. That single block accounts for
+-$77,478 of the total -$49,178 loss on its own. Every correctly-timed momentum block is a genuine win
+(+42,400/+1,394/+10,493 = +$54,287 combined) -- the layer isn't broken, it's mistimed relative to a
+regime that oscillates faster than its own memory. Faster windows would fix the timing but at the cost
+of more real-data false positives, which is exactly why those windows were sized the way they are --
+a real tradeoff, not a bug to patch.

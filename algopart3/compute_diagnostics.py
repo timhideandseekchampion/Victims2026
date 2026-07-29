@@ -10,7 +10,7 @@ and attributes every day's PnL to the ALGO index leg (instrument 0) vs the idio 
 Exports diag_data.json for build_diagnostics.py.
 """
 import json, numpy as np, pandas as pd
-import SAFE, SWING, QUAL, SAFE_llalgo, SAFE_lldollar, SAFE_llmatch, SAFE_llvol, SAFE_llvol_vo, SAFE_llboost, SAFE_llboost_v2, SAFE_llboost_v3, SAFE_llboost_v4, SAFE_llboost_v5, SAFE_llboost_v6, SAFE_llboost_v7
+import SAFE, SWING, QUAL, SAFE_llalgo, SAFE_lldollar, SAFE_llmatch, SAFE_llvol, SAFE_llvol_vo, SAFE_llboost, SAFE_llboost_v2, SAFE_llboost_v3, SAFE_llboost_v4, SAFE_llboost_v5, SAFE_llboost_v6, SAFE_llboost_v7, SAFE_llboost_v8, SAFE_llboost_v9, SAFE_llboost_v10, SAFE_llboost_v11, SAFE_llboost_v12, SAFE_llboost_v13, SAFE_llboost_v14, SAFE_llboost_v15, SAFE_llboost_v16, SAFE_llboost_v17, SAFE_llboost_v18
 
 prc = pd.read_csv("prices.txt", sep=r"\s+", header=0)
 names = list(prc.columns)
@@ -27,7 +27,12 @@ STRATS = [("SAFE", SAFE), ("SWING", SWING), ("QUAL", QUAL),
           ("LLBOOST", SAFE_llboost), ("LLBOOST_V2", SAFE_llboost_v2),
           ("LLBOOST_V3", SAFE_llboost_v3), ("LLBOOST_V4", SAFE_llboost_v4),
           ("LLBOOST_V5", SAFE_llboost_v5), ("LLBOOST_V6", SAFE_llboost_v6),
-          ("LLBOOST_V7", SAFE_llboost_v7)]
+          ("LLBOOST_V7", SAFE_llboost_v7), ("LLBOOST_V8", SAFE_llboost_v8),
+          ("LLBOOST_V9", SAFE_llboost_v9), ("LLBOOST_V10", SAFE_llboost_v10),
+          ("LLBOOST_V11", SAFE_llboost_v11), ("LLBOOST_V12", SAFE_llboost_v12),
+          ("LLBOOST_V13", SAFE_llboost_v13), ("LLBOOST_V14", SAFE_llboost_v14),
+          ("LLBOOST_V15", SAFE_llboost_v15), ("LLBOOST_V16", SAFE_llboost_v16),
+          ("LLBOOST_V17", SAFE_llboost_v17), ("LLBOOST_V18", SAFE_llboost_v18)]
 
 
 def score(mu, sd):
@@ -114,7 +119,9 @@ diag["cum"]["IDIO_ONLY"] = {"NEW": curves(io_new, NEW[0]), "OLD": curves(io_old,
 end_days = list(range(400, nt + 1, 10))
 roll = {"end_days": end_days, "SAFE": [], "LLALGO": [], "LLMATCH": [], "LLVOL": [], "LLVOL_VO": [],
         "LLBOOST": [], "LLBOOST_V2": [], "LLBOOST_V3": [], "LLBOOST_V4": [], "LLBOOST_V5": [], "LLBOOST_V6": [],
-        "LLBOOST_V7": [], "IDIO": []}
+        "LLBOOST_V7": [], "LLBOOST_V8": [], "LLBOOST_V9": [], "LLBOOST_V10": [], "LLBOOST_V11": [],
+        "LLBOOST_V12": [], "LLBOOST_V13": [], "LLBOOST_V14": [], "LLBOOST_V15": [], "LLBOOST_V16": [],
+        "LLBOOST_V17": [], "LLBOOST_V18": [], "IDIO": []}
 for E in end_days:
     S = E - NUMTEST
     roll["SAFE"].append(round(window(POS["SAFE"], S, E)["score"], 1))
@@ -129,6 +136,17 @@ for E in end_days:
     roll["LLBOOST_V5"].append(round(window(POS["LLBOOST_V5"], S, E)["score"], 1))
     roll["LLBOOST_V6"].append(round(window(POS["LLBOOST_V6"], S, E)["score"], 1))
     roll["LLBOOST_V7"].append(round(window(POS["LLBOOST_V7"], S, E)["score"], 1))
+    roll["LLBOOST_V8"].append(round(window(POS["LLBOOST_V8"], S, E)["score"], 1))
+    roll["LLBOOST_V9"].append(round(window(POS["LLBOOST_V9"], S, E)["score"], 1))
+    roll["LLBOOST_V10"].append(round(window(POS["LLBOOST_V10"], S, E)["score"], 1))
+    roll["LLBOOST_V11"].append(round(window(POS["LLBOOST_V11"], S, E)["score"], 1))
+    roll["LLBOOST_V12"].append(round(window(POS["LLBOOST_V12"], S, E)["score"], 1))
+    roll["LLBOOST_V13"].append(round(window(POS["LLBOOST_V13"], S, E)["score"], 1))
+    roll["LLBOOST_V14"].append(round(window(POS["LLBOOST_V14"], S, E)["score"], 1))
+    roll["LLBOOST_V15"].append(round(window(POS["LLBOOST_V15"], S, E)["score"], 1))
+    roll["LLBOOST_V16"].append(round(window(POS["LLBOOST_V16"], S, E)["score"], 1))
+    roll["LLBOOST_V17"].append(round(window(POS["LLBOOST_V17"], S, E)["score"], 1))
+    roll["LLBOOST_V18"].append(round(window(POS["LLBOOST_V18"], S, E)["score"], 1))
     roll["IDIO"].append(round(window(POS["SAFE"], S, E, algo_off=True)["score"], 1))
 diag["rolling"] = roll
 

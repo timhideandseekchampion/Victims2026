@@ -1,7 +1,7 @@
 """Compute per-asset daily positions for SAFE and SWING over all days (count read from
 prices.txt), derive entry/exit events (sign flips), and export a compact JSON for the dashboard."""
 import json, numpy as np, pandas as pd
-import SAFE, SWING, QUAL, SAFE_llalgo, SAFE_lldollar, SAFE_llvol, SAFE_llvol_vo, SAFE_llboost, SAFE_llboost_v2, SAFE_llboost_v3, SAFE_llboost_v4, SAFE_llboost_v5, SAFE_llboost_v6, SAFE_llboost_v7
+import SAFE, SWING, QUAL, SAFE_llalgo, SAFE_lldollar, SAFE_llvol, SAFE_llvol_vo, SAFE_llboost, SAFE_llboost_v2, SAFE_llboost_v3, SAFE_llboost_v4, SAFE_llboost_v5, SAFE_llboost_v6, SAFE_llboost_v7, SAFE_llboost_v8, SAFE_llboost_v9, SAFE_llboost_v10, SAFE_llboost_v11, SAFE_llboost_v12, SAFE_llboost_v13, SAFE_llboost_v14, SAFE_llboost_v15, SAFE_llboost_v16, SAFE_llboost_v17, SAFE_llboost_v18
 
 prc = pd.read_csv("prices.txt", sep=r"\s+", header=0)
 names = list(prc.columns)
@@ -65,7 +65,12 @@ for label, mod in [("SAFE", SAFE), ("SWING", SWING), ("QUAL", QUAL),
                    ("LLBOOST", SAFE_llboost), ("LLBOOST_V2", SAFE_llboost_v2),
                    ("LLBOOST_V3", SAFE_llboost_v3), ("LLBOOST_V4", SAFE_llboost_v4),
                    ("LLBOOST_V5", SAFE_llboost_v5), ("LLBOOST_V6", SAFE_llboost_v6),
-                   ("LLBOOST_V7", SAFE_llboost_v7)]:
+                   ("LLBOOST_V7", SAFE_llboost_v7), ("LLBOOST_V8", SAFE_llboost_v8),
+                   ("LLBOOST_V9", SAFE_llboost_v9), ("LLBOOST_V10", SAFE_llboost_v10),
+                   ("LLBOOST_V11", SAFE_llboost_v11), ("LLBOOST_V12", SAFE_llboost_v12),
+                   ("LLBOOST_V13", SAFE_llboost_v13), ("LLBOOST_V14", SAFE_llboost_v14),
+                   ("LLBOOST_V15", SAFE_llboost_v15), ("LLBOOST_V16", SAFE_llboost_v16),
+                   ("LLBOOST_V17", SAFE_llboost_v17), ("LLBOOST_V18", SAFE_llboost_v18)]:
     print("computing", label, "...")
     pos = positions(mod)
     sign = np.sign(pos).astype(int)                       # -1 short, 0 flat, +1 long

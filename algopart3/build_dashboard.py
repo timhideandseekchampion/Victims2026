@@ -55,10 +55,11 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--border)
 
 <div class="bar">
   <div class="seg" id="stratseg">
-    <button data-s="SAFE" class="on">SAFE</button><button data-s="QUAL">QUAL</button><button data-s="SWING">SWING</button><button data-s="LLALGO">LLALGO</button><button data-s="LLDOLLAR">LLDOLLAR</button><button data-s="LLVOL">LLVOL&nbsp;(v+m)</button><button data-s="LLVOL_VO">LLVOL&middot;VO</button><button data-s="LLBOOST">LLBOOST</button><button data-s="LLBOOST_V2">LLBOOST&nbsp;v2</button><button data-s="LLBOOST_V3">LLBOOST&nbsp;v3</button><button data-s="LLBOOST_V4">LLBOOST&nbsp;v4</button><button data-s="LLBOOST_V5">LLBOOST&nbsp;v5</button><button data-s="LLBOOST_V6">LLBOOST&nbsp;v6</button><button data-s="LLBOOST_V7">LLBOOST&nbsp;v7</button>
+    <button data-s="SAFE" class="on">SAFE</button><button data-s="QUAL">QUAL</button><button data-s="SWING">SWING</button><button data-s="LLALGO">LLALGO</button><button data-s="LLDOLLAR">LLDOLLAR</button><button data-s="LLVOL">LLVOL&nbsp;(v+m)</button><button data-s="LLVOL_VO">LLVOL&middot;VO</button><button data-s="LLBOOST">LLBOOST</button><button data-s="LLBOOST_V2">LLBOOST&nbsp;v2</button><button data-s="LLBOOST_V3">LLBOOST&nbsp;v3</button><button data-s="LLBOOST_V4">LLBOOST&nbsp;v4</button><button data-s="LLBOOST_V5">LLBOOST&nbsp;v5</button><button data-s="LLBOOST_V6">LLBOOST&nbsp;v6</button><button data-s="LLBOOST_V7">LLBOOST&nbsp;v7</button><button data-s="LLBOOST_V8">LLBOOST&nbsp;v8</button><button data-s="LLBOOST_V9">LLBOOST&nbsp;v9</button><button data-s="LLBOOST_V10">LLBOOST&nbsp;v10</button><button data-s="LLBOOST_V11">LLBOOST&nbsp;v11</button><button data-s="LLBOOST_V12">LLBOOST&nbsp;v12</button><button data-s="LLBOOST_V13">LLBOOST&nbsp;v13</button><button data-s="LLBOOST_V14">LLBOOST&nbsp;v14</button><button data-s="LLBOOST_V15">LLBOOST&nbsp;v15</button><button data-s="LLBOOST_V16">LLBOOST&nbsp;v16</button><button data-s="LLBOOST_V17">LLBOOST&nbsp;v17</button><button data-s="LLBOOST_V18">LLBOOST&nbsp;v18</button>
   </div>
   <label>Asset <select id="assetsel"></select></label>
   <button class="sortbtn" id="resetzoom">Reset zoom</button>
+  <button class="sortbtn" id="themetoggle" title="Toggle light / dark">🌙</button>
   <div class="legend">
     <span><span class="sw" style="background:var(--longband);border:1px solid var(--long)"></span>long</span>
     <span><span class="sw" style="background:var(--shortband);border:1px solid var(--short)"></span>short</span>
@@ -329,6 +330,23 @@ function renderAlgoLeg(){
  window.addEventListener('mouseup',e=>{if(!dragging)return;dragging=false;const pad=cv._pad,xs=cv._xs;
    const ex=e.clientX-cv.getBoundingClientRect().left;const toD=px=>Math.round(x0+(px-pad.l)/((cv.clientWidth-pad.l-pad.r))*(x1-x0));
    let a=toD(Math.min(sx,ex)),b=toD(Math.max(sx,ex));if(b-a>=8){x0=Math.max(0,a);x1=Math.min(NT-1,b);renderDetail();}});
+})();
+
+// theme toggle (CSS already has [data-theme] rules; nothing sets the attribute without this)
+(function(){
+  const btn=document.getElementById('themetoggle');
+  const saved=localStorage.getItem('theme');
+  if(saved)document.documentElement.setAttribute('data-theme',saved);
+  const effective=()=>document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+  const paint=()=>{btn.textContent=effective()==='dark'?'☀️':'🌙';};
+  paint();
+  btn.addEventListener('click',()=>{
+    const next=effective()==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    localStorage.setItem('theme',next);
+    paint();
+    renderDetail();renderSkew();renderPersist();renderGrid();renderAlgoLeg();
+  });
 })();
 
 // controls

@@ -11,28 +11,28 @@ HTML = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 :root{
   --surface:#fcfcfb; --plane:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
   --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
-  --blue:#2a78d6; --aqua:#1baf7a; --red:#e34948; --amber:#eda100; --violet:#4a3aa7; --green:#2f9e44; --orange:#e0692c; --teal:#0e8f8f; --magenta:#b0348a; --lime:#6a9e1f; --brown:#8a5a3c; --rose:#b0203f;
+  --blue:#2a78d6; --aqua:#1baf7a; --red:#e34948; --amber:#eda100; --violet:#4a3aa7; --green:#2f9e44; --orange:#e0692c; --teal:#0e8f8f; --magenta:#b0348a; --lime:#6a9e1f; --brown:#8a5a3c; --rose:#b0203f; --steel:#3d6d99; --coral:#c9573a; --gold:#a67c00; --cobalt:#3355c0; --umber:#b0501f; --jade:#1f8f6a; --purple:#7a2fb0; --berry:#9a2f55; --indigo:#5a3f9a; --cerulean:#1a7fab; --olive:#8a7a1f;
   --posband:rgba(27,175,122,.13); --negband:rgba(227,73,72,.12); --blueband:rgba(42,120,214,.10);
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root{
   --surface:#1a1a19; --plane:#0d0d0d; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
   --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
-  --blue:#3987e5; --aqua:#199e70; --red:#e66767; --amber:#c98500; --violet:#9085e9; --green:#5cbf63; --orange:#e8813f; --teal:#2bb3b3; --magenta:#d456ac; --lime:#8ec93f; --brown:#b07a58; --rose:#e0507a;
+  --blue:#3987e5; --aqua:#199e70; --red:#e66767; --amber:#c98500; --violet:#9085e9; --green:#5cbf63; --orange:#e8813f; --teal:#2bb3b3; --magenta:#d456ac; --lime:#8ec93f; --brown:#b07a58; --rose:#e0507a; --steel:#6fa3d6; --coral:#e8896a; --gold:#d9ad33; --cobalt:#6f85e0; --umber:#cf6a28; --jade:#22bf8a; --purple:#a855e0; --berry:#d94f7a; --indigo:#8f70e0; --cerulean:#3fb0d9; --olive:#c9ad3f;
   --posband:rgba(25,158,112,.16); --negband:rgba(230,103,103,.15); --blueband:rgba(57,135,229,.14);
   color-scheme:dark;
 }}
 :root[data-theme=dark]{
   --surface:#1a1a19; --plane:#0d0d0d; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
   --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
-  --blue:#3987e5; --aqua:#199e70; --red:#e66767; --amber:#c98500; --violet:#9085e9; --green:#5cbf63; --orange:#e8813f; --teal:#2bb3b3; --magenta:#d456ac; --lime:#8ec93f; --brown:#b07a58; --rose:#e0507a;
+  --blue:#3987e5; --aqua:#199e70; --red:#e66767; --amber:#c98500; --violet:#9085e9; --green:#5cbf63; --orange:#e8813f; --teal:#2bb3b3; --magenta:#d456ac; --lime:#8ec93f; --brown:#b07a58; --rose:#e0507a; --steel:#6fa3d6; --coral:#e8896a; --gold:#d9ad33; --cobalt:#6f85e0; --umber:#cf6a28; --jade:#22bf8a; --purple:#a855e0; --berry:#d94f7a; --indigo:#8f70e0; --cerulean:#3fb0d9; --olive:#c9ad3f;
   --posband:rgba(25,158,112,.16); --negband:rgba(230,103,103,.15); --blueband:rgba(57,135,229,.14);
   color-scheme:dark;
 }
 :root[data-theme=light]{
   --surface:#fcfcfb; --plane:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
   --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
-  --blue:#2a78d6; --aqua:#1baf7a; --red:#e34948; --amber:#eda100; --violet:#4a3aa7; --green:#2f9e44; --orange:#e0692c; --teal:#0e8f8f; --magenta:#b0348a; --lime:#6a9e1f; --brown:#8a5a3c; --rose:#b0203f;
+  --blue:#2a78d6; --aqua:#1baf7a; --red:#e34948; --amber:#eda100; --violet:#4a3aa7; --green:#2f9e44; --orange:#e0692c; --teal:#0e8f8f; --magenta:#b0348a; --lime:#6a9e1f; --brown:#8a5a3c; --rose:#b0203f; --steel:#3d6d99; --coral:#c9573a; --gold:#a67c00; --cobalt:#3355c0; --umber:#b0501f; --jade:#1f8f6a; --purple:#7a2fb0; --berry:#9a2f55; --indigo:#5a3f9a; --cerulean:#1a7fab; --olive:#8a7a1f;
   --posband:rgba(27,175,122,.13); --negband:rgba(227,73,72,.12); --blueband:rgba(42,120,214,.10);
   color-scheme:light;
 }
@@ -129,7 +129,7 @@ tailwind to a headwind on the new draw. Every number below is the exact <code>ev
   drifts steadily <b class="neg">down</b> while the idio line climbs — the leg is a pure drag on this draw.</p>
   <div class="toolbar">
     <div class="seg" id="cumwin"><button data-w="NEW" class="on">new 751–1000</button><button data-w="OLD">old 501–750</button></div>
-    <div class="seg" id="cumstrat"><button data-s="LLALGO" class="on">LLALGO (lead-lag)</button><button data-s="SAFE">SAFE (reversion)</button><button data-s="LLBOOST">LLBOOST (pairwise boost)</button><button data-s="LLBOOST_V2">LLBOOST v2 (adaptive mom)</button><button data-s="LLBOOST_V3">LLBOOST v3 (candidate pool)</button><button data-s="LLBOOST_V4">LLBOOST v4 (v2+v3)</button><button data-s="LLBOOST_V5">LLBOOST v5 (v3 refined)</button><button data-s="LLBOOST_V6">LLBOOST v6 (v2+v5)</button><button data-s="LLBOOST_V7">LLBOOST v7 (v6 + retuned COMBINE_GAIN, best)</button></div>
+    <div class="seg" id="cumstrat"><button data-s="LLALGO" class="on">LLALGO (lead-lag)</button><button data-s="SAFE">SAFE (reversion)</button><button data-s="LLBOOST">LLBOOST (pairwise boost)</button><button data-s="LLBOOST_V2">LLBOOST v2 (adaptive mom)</button><button data-s="LLBOOST_V3">LLBOOST v3 (candidate pool)</button><button data-s="LLBOOST_V4">LLBOOST v4 (v2+v3)</button><button data-s="LLBOOST_V5">LLBOOST v5 (v3 refined)</button><button data-s="LLBOOST_V6">LLBOOST v6 (v2+v5)</button><button data-s="LLBOOST_V7">LLBOOST v7 (retuned COMBINE_GAIN)</button><button data-s="LLBOOST_V8">LLBOOST v8 (ALGO deadband)</button><button data-s="LLBOOST_V9">LLBOOST v9 (beta-demean)</button><button data-s="LLBOOST_V10">LLBOOST v10 (rank-stability)</button><button data-s="LLBOOST_V11">LLBOOST v11 (idio kill switch)</button><button data-s="LLBOOST_V12">LLBOOST v12 (v11 + post-jump fade, shipped)</button><button data-s="LLBOOST_V13">LLBOOST v13 (v11 + gated boost fallback, experimental)</button><button data-s="LLBOOST_V14">LLBOOST v14 (v11+v12+v13 + momentum/xsac insurance, experimental)</button><button data-s="LLBOOST_V15">LLBOOST v15 (v12 + insurance, no v13, recommended)</button><button data-s="LLBOOST_V16">LLBOOST v16 (v15 + IC/t-stat gate)</button><button data-s="LLBOOST_V17">LLBOOST v17 (v15 + dual EW IC gate)</button><button data-s="LLBOOST_V18">LLBOOST v18 (v17 + Bonferroni-corrected IC gate)</button></div>
   </div>
   <div class="legend">
     <span><span class="ln" style="border-color:var(--ink)"></span>total</span>
@@ -194,7 +194,7 @@ function renderKpis(){
 // ---------- Panel 1: dumbbell ----------
 function renderDumbbell(){
   const s=clear('dumbbell');
-  const rows=[...DATA.strategies.map(k=>({nm:k==='LLMATCH'?'LLMATCH k='+MK:k,o:DATA.headline[k].OLD.score,n:DATA.headline[k].NEW.score,hi:(k==='LLMATCH'||k==='LLVOL'||k==='LLBOOST'||k==='LLBOOST_V2'||k==='LLBOOST_V3'||k==='LLBOOST_V4'||k==='LLBOOST_V5'||k==='LLBOOST_V6'||k==='LLBOOST_V7')})),
+  const rows=[...DATA.strategies.map(k=>({nm:k==='LLMATCH'?'LLMATCH k='+MK:k,o:DATA.headline[k].OLD.score,n:DATA.headline[k].NEW.score,hi:(k==='LLMATCH'||k==='LLVOL'||k==='LLBOOST'||k==='LLBOOST_V2'||k==='LLBOOST_V3'||k==='LLBOOST_V4'||k==='LLBOOST_V5'||k==='LLBOOST_V6'||k==='LLBOOST_V7'||k==='LLBOOST_V8'||k==='LLBOOST_V9'||k==='LLBOOST_V10'||k==='LLBOOST_V11'||k==='LLBOOST_V12'||k==='LLBOOST_V13'||k==='LLBOOST_V14'||k==='LLBOOST_V15'||k==='LLBOOST_V16'||k==='LLBOOST_V17'||k==='LLBOOST_V18')})),
               {nm:'idio only',o:DATA.idio_only.OLD.score,n:DATA.idio_only.NEW.score,hi:true}];
   const W=s.clientWidth||1100, rowH=42, padT=16, padB=28, padL=118, padR=54;
   const H=padT+padB+rows.length*rowH; s.setAttribute('viewBox',`0 0 ${W} ${H}`); s.setAttribute('height',H);
@@ -269,14 +269,23 @@ function lineChart(id, series, xdom, ydom, xlab, opts){
   xt.forEach(v=>{const x=X(v);const t=el('text',{x,y:H-padB+16,'text-anchor':'middle'});t.textContent=v;s.appendChild(t);});
   const xl=el('text',{x:(padL+W-padR)/2,y:H-2,'text-anchor':'middle'});xl.textContent=xlab;s.appendChild(xl);
   // series polylines
+  const labelQueue=[];
   for(const se of series){
     const pts=se.x.map((xv,i)=>X(xv)+','+Y(se.y[i])).join(' ');
     s.appendChild(el('polyline',{points:pts,fill:'none',stroke:cssv(se.col),'stroke-width':se.w||2.2,
       'stroke-linejoin':'round','stroke-linecap':'round'}));
-    // direct label at last point
-    if(se.label){const lx=X(se.x[se.x.length-1]),ly=Y(se.y[se.y.length-1]);
-      const t=el('text',{x:lx+6,y:ly+3,class:'val'});t.textContent=se.label;t.setAttribute('fill',cssv(se.col));s.appendChild(t);}
+    // direct label at last point (position finalized below, after decluttering)
+    if(se.label){labelQueue.push({lx:X(se.x[se.x.length-1]),ly:Y(se.y[se.y.length-1]),label:se.label,col:se.col});}
   }
+  // declutter: when several lines converge, push overlapping end-labels apart vertically
+  labelQueue.sort((a,b)=>a.ly-b.ly);
+  const minGap=13;
+  for(let i=1;i<labelQueue.length;i++){
+    if(labelQueue[i].ly-labelQueue[i-1].ly<minGap) labelQueue[i].ly=labelQueue[i-1].ly+minGap;
+  }
+  labelQueue.forEach(lb=>{
+    const t=el('text',{x:lb.lx+6,y:lb.ly+3,class:'val'});t.textContent=lb.label;t.setAttribute('fill',cssv(lb.col));s.appendChild(t);
+  });
   // vertical markers (e.g. the chosen MATCH_K)
   (opts.vlines||[]).forEach(vl=>{const x=X(vl.x);
     s.appendChild(el('line',{x1:x,y1:padT,x2:x,y2:H-padB,stroke:cssv('--ink2'),'stroke-width':1.3,'stroke-dasharray':'4 3',opacity:.65}));
@@ -303,11 +312,22 @@ function xtSpan(d){const span=d[1]-d[0],step=span<=120?20:span<=350?50:100,t=[];
 // ---------- Panel 3: rolling ----------
 function renderRolling(){
   const R=DATA.rolling, ed=R.end_days;
-  let lo=Infinity,hi=-Infinity;[R.LLALGO,R.LLMATCH,R.LLVOL,R.LLVOL_VO,R.LLBOOST,R.LLBOOST_V2,R.LLBOOST_V3,R.LLBOOST_V4,R.LLBOOST_V5,R.LLBOOST_V6,R.LLBOOST_V7,R.IDIO].forEach(a=>a.forEach(v=>{lo=Math.min(lo,v);hi=Math.max(hi,v);}));
+  let lo=Infinity,hi=-Infinity;[R.LLALGO,R.LLMATCH,R.LLVOL,R.LLVOL_VO,R.LLBOOST,R.LLBOOST_V2,R.LLBOOST_V3,R.LLBOOST_V4,R.LLBOOST_V5,R.LLBOOST_V6,R.LLBOOST_V7,R.LLBOOST_V8,R.LLBOOST_V9,R.LLBOOST_V10,R.LLBOOST_V11,R.LLBOOST_V12,R.LLBOOST_V13,R.LLBOOST_V14,R.LLBOOST_V15,R.LLBOOST_V16,R.LLBOOST_V17,R.LLBOOST_V18,R.IDIO].forEach(a=>a.forEach(v=>{lo=Math.min(lo,v);hi=Math.max(hi,v);}));
   lo=Math.floor((lo-20)/50)*50; hi=Math.ceil((hi+20)/50)*50;
   lineChart('rolling',[
-    {x:ed,y:R.LLBOOST_V7,col:'--rose',nm:'LLBOOST v7 (v6 + retuned COMBINE_GAIN, best overall)',label:'LLBOOST v7',w:3.6},
-    {x:ed,y:R.LLBOOST_V6,col:'--brown',nm:'LLBOOST v6 (v5 refined boost + v2 adaptive momentum)',label:'LLBOOST v6',w:3.2},
+    {x:ed,y:R.LLBOOST_V18,col:'--olive',nm:'LLBOOST v18 (v17 + Bonferroni-corrected dual-EW IC gate)',label:'LLBOOST v18',w:5.2},
+    {x:ed,y:R.LLBOOST_V17,col:'--cerulean',nm:'LLBOOST v17 (v15 + dual exponentially-weighted IC gate, HL=15/60)',label:'LLBOOST v17',w:5.0},
+    {x:ed,y:R.LLBOOST_V16,col:'--indigo',nm:'LLBOOST v16 (v15 + flat 60d IC/t-stat significance gate)',label:'LLBOOST v16',w:4.8},
+    {x:ed,y:R.LLBOOST_V15,col:'--berry',nm:'LLBOOST v15 (v12 + momentum/xsac insurance, no v13, recommended)',label:'LLBOOST v15',w:4.6},
+    {x:ed,y:R.LLBOOST_V14,col:'--purple',nm:'LLBOOST v14 (v11+v12+v13 merged + momentum/xsac insurance, experimental)',label:'LLBOOST v14',w:4.4},
+    {x:ed,y:R.LLBOOST_V13,col:'--jade',nm:'LLBOOST v13 (v11 + gated decayed-selection boost fallback, experimental)',label:'LLBOOST v13',w:4.2},
+    {x:ed,y:R.LLBOOST_V12,col:'--umber',nm:'LLBOOST v12 (v11 + post-jump fixed-size fade, shipped)',label:'LLBOOST v12',w:4.0},
+    {x:ed,y:R.LLBOOST_V11,col:'--cobalt',nm:'LLBOOST v11 (v10 + idio kill switch)',label:'LLBOOST v11',w:3.9},
+    {x:ed,y:R.LLBOOST_V10,col:'--gold',nm:'LLBOOST v10 (v9 + rank-stability blend)',label:'LLBOOST v10',w:3.8},
+    {x:ed,y:R.LLBOOST_V9,col:'--coral',nm:'LLBOOST v9 (v8 + beta-adjusted idio ridge target)',label:'LLBOOST v9',w:3.4},
+    {x:ed,y:R.LLBOOST_V8,col:'--steel',nm:'LLBOOST v8 (ALGO min-conviction HOLD deadband)',label:'LLBOOST v8',w:3.2},
+    {x:ed,y:R.LLBOOST_V7,col:'--rose',nm:'LLBOOST v7 (v6 + retuned COMBINE_GAIN)',label:'LLBOOST v7',w:2.8},
+    {x:ed,y:R.LLBOOST_V6,col:'--brown',nm:'LLBOOST v6 (v5 refined boost + v2 adaptive momentum)',label:'LLBOOST v6',w:2.4},
     {x:ed,y:R.LLBOOST_V5,col:'--lime',nm:'LLBOOST v5 (v3 boost pool, re-tuned IC_L/MIN_DAY)',label:'LLBOOST v5',w:2.6},
     {x:ed,y:R.LLBOOST_V4,col:'--magenta',nm:'LLBOOST v4 (v3 candidate pool + v2 adaptive momentum)',label:'LLBOOST v4',w:3.0},
     {x:ed,y:R.LLBOOST_V3,col:'--teal',nm:'LLBOOST v3 (volatility-restricted candidate pool)',label:'LLBOOST v3',w:2.4},
