@@ -1,56 +1,38 @@
 """
 ================================================================================
-###  ArbitrageVictims.py  ·  Team ArbitrageVictims submission  ###
+###  SAFE_llboost_v22.py  ·  v15 + v19's two-hop transitive boost + v21's G84 learned  ###
+###  per-name rank-stability blend weight -- COMPOSING the two validated additions   ###
 ================================================================================
-STRATEGY OVERVIEW
+Built 2026-07-30. Both v19 and v21 were independently validated as clean, real-data-confirmed
+improvements over v15, and touch different, non-overlapping parts of `_idio_signal`'s pipeline:
+v19 changes `_pairwise_boost` (BEFORE the rank-stability blend), v21 changes only the rank-stability
+blend step itself. This file merges both, unmodified from their own validated form, to check they
+compose without a negative interaction before either is considered for promotion into
+ArbitrageVictims.py -- see test_v22_composed.py for the full real-data (incl. WIN250)/change-point/
+trend-regime battery re-run against v15/v19/v21 individually.
 
-Idio book (49 stocks, instruments 1-50): a lead-lag ridge ensemble (four EWLS half-lives,
-250/500/1000/2000 days, blended) forecasts each stock's next-day return from the full cross-section
-of lagged returns, beta-adjusted against the common (index) factor. This is blended 70/30 with a
-10-day cross-sectional reversion signal, boosted by a pairwise lead-lag overlay (each stock gets a
-convex-scaled nudge from its most significant, Bonferroni-corrected leader among the 39 most volatile
-candidates -- and, when that leader itself has its own significant leader, a second, independently
-validated nudge from that leader's leader too, correlation-weighted against the first), a
-rank-stability short/long trend-pullback blend whose weight is learned per stock from that stock's
-own trailing predictive track record (amplified where it's recently worked, shrunk toward zero where
-it hasn't), and a fixed-size fade on outsized single-day jumps (>2 sigma vs the stock's own trailing
-40-day vol). Positions are sign-sized to a fixed $10k-per-stock target.
+v19's mechanism (verbatim): `_pairwise_boost` tries each follower's existing single direct leader
+first (identical selection to v15). If that leader B itself has its own direct leader A (A != the
+follower, A != B, directly significant against the follower), A is added as a second candidate,
+combined via `_combine_leaders` (|corr|-weighted average, each independently IC>0-gated). Reduces
+exactly to v15's plain single-leader boost whenever no valid two-hop chain exists.
 
-Regime protection, layered on top of the idio signal:
-  - Kill switch: flattens the idio book if its trailing 60-day realized PnL turns negative,
-    re-checked fresh every day.
-  - Momentum/cross-sectional-regime insurance: monitors the champion signal's health (trailing PnL
-    and a cross-sectional lag-1 autocorrelation regime detector) and, only if the champion is
-    unhealthy AND a momentum-family fallback (short momentum, Jegadeesh-Titman, or residual
-    momentum) is both profitable and beating the champion for 5 straight days, switches the book to
-    that fallback instead. Reverts back to the champion the moment either condition stops holding.
-
-ALGO leg (instrument 0): an independent adaptive realized-volatility/momentum timing signal with its
-own fast+slow IC-agreement gate, unaffected by anything above.
-
-VALIDATION STATUS
-
-On the full real price history available to us, this exact configuration was checked against a
-simpler, already-validated baseline that omits the regime-protection layer across every 250-day
-window from day 250 through day 1000 (not just the most recent stretch) -- the two-hop lead-lag
-overlay and the learned rank-stability weighting each add a further, additive improvement on top,
-with zero rolling windows scoring worse than the baseline. The regime-protection layer itself has
-never triggered on any day of real data we have, so it carries no measured cost there; its value is
-specifically as insurance against a regime shift in unseen future data. In constructed stress tests
-(a sustained cross-sectional trend, a volatility regime change, an index-level trend, a sudden
-stock-cluster correlation shift, and a synthetic structural break in the lead-lag relationships
-themselves), this configuration meaningfully outperformed the simpler baseline. The one identified
-weakness is a fast, cleanly-alternating whipsaw regime (a market flipping between trending and
-mean-reverting every 10-25 days), where the protection layer's detection lag causes it to react a
-beat too late; this cost is bounded and was judged an acceptable tradeoff against the broader upside.
+v21's mechanism (verbatim): the rank-stability blend's flat RS_WEIGHT is replaced by a per-name
+multiplier learned from each name's own trailing BOOST_IC_L(=250)-day causal IC of the raw RS
+signal against its own realized idio return: mult_i(t)=clip(1+G84_GAIN*ic_i(t),0,G84_CAP),
+w_i(t)=RS_WEIGHT*mult_i(t). Falls back to the uniform RS_WEIGHT before enough IC history exists.
 ================================================================================
 """
 import numpy as np
 from scipy import stats
 
-BOOK = "ArbitrageVictims (lead-lag ridge + two-hop boost + learned RS weight + fade, kill switch + momentum regime insurance)"
+BOOK = "SAFE · LL-BOOST v22 (v15 + v19 two-hop boost + v21 G84 learned RS weight, composed)"
 
-# --- idio ridge ensemble + ALGO adaptive-vol leg ---
+# --- G84 learned per-name RS blend weight (new in v21) ---
+G84_GAIN = 2.0
+G84_CAP  = 2.0
+
+# --- idio ridge + ALGO adaptive-vol leg (identical to SAFE_llboost_v9/v10/v11/v12/v13/v14.py) ---
 HALF_LIVES  = (250, 500, 1000, 2000)
 RIDGE_A     = 0.1
 BLEND       = 0.3
@@ -75,31 +57,21 @@ MOM_LB_SHORT = 7
 MOM_LB_LONG  = 12
 COMBINE_GAIN = 16.0
 
-# --- ALGO min-conviction HOLD deadband: skip trading the index leg on a low-conviction day, hold
-#     yesterday's position instead ---
+# --- ALGO min-conviction HOLD deadband (identical to SAFE_llboost_v8.py) ---
 DEADBAND_THRESH_FRAC = 0.25
 DEADBAND_MIN_DAY = 400
 
-# --- beta-adjusted idio ridge target: partially strips common-mode (index) exposure back out of
-#     each stock's target return before fitting, so the ridge forecasts idiosyncratic moves ---
+# --- beta-adjusted idio ridge target (identical to SAFE_llboost_v9.py) ---
 BETA_DEMEAN_LAM = 0.6
 BETA_DEMEAN_W = 500
 
-# --- rank-stability trend/pullback blend: fades a stock's short-term move only when it opposes its
-#     own medium-term trend. RS_WEIGHT is the fallback/base weight; each stock's actual blend weight
-#     is learned per name below (see _rs_raw_hist / the blend step in _idio_signal) ---
+# --- rank-stability trend/pullback blend (identical to SAFE_llboost_v10.py) ---
 RS_SHORT_W = 8
 RS_LONG_W = 22
 RS_WEIGHT = 0.015
 
-# --- learned per-stock rank-stability blend weight: amplifies/shrinks RS_WEIGHT per name based on
-#     that name's own trailing predictive track record ---
-RS_LEARN_GAIN = 2.0
-RS_LEARN_CAP  = 2.0
-
-# --- pairwise lead-lag boost: nudges each stock's forecast toward its most significant
-#     (Bonferroni-corrected), most-volatile candidate leader -- and transitively through that
-#     leader's own leader, when independently significant ---
+# --- pairwise boost parameters (identical to SAFE_llboost_v8/v9/v10/v11/v12.py -- plain, no
+#     decayed-selection fallback; deliberately NOT porting SAFE_llboost_v13's BOOST_SEL_FALLBACK_HL) ---
 BOOST_K = 1.5
 BOOST_MIN_DAY = 480
 BOOST_N_CANDIDATES = 39
@@ -107,18 +79,18 @@ BOOST_IC_L = 250
 BOOST_P = 2.0
 BOOST_SCALE_W = 1000
 
-# --- post-jump fixed-size fade: a discrete overlay against any stock's outsized single-day move ---
+# --- post-jump fixed-size fade (identical to SAFE_llboost_v12/v13/v14.py) ---
 FADE_W        = 40
 FADE_K_SIGMA  = 2.0
 FADE_EXTRA_W  = 0.06
 
-# --- idio kill switch: flattens the book on a sustained trailing-PnL loss, re-checked daily ---
+# --- idio kill switch, PnL-sum trigger (identical to SAFE_llboost_v11/v12/v13/v14.py) ---
 KILL_ON     = True
 KILL_MARGIN = 0.0
 KILL_P      = 1
 ROT_W       = 60
 
-# --- momentum/cross-sectional-regime insurance layer ---
+# --- momentum/xsac insurance layer (identical to SAFE_llboost_v14.py's Part B) ---
 ROT_P       = 5        # consecutive-day persistence required before rotating away from champ
 XSAC_W      = 40        # trailing window for the cross-sectional lag-1 autocorr regime detector
 XSAC_TH     = 0.07       # real-data max is +0.061 -- 0 false flags on all real days at this threshold
@@ -164,8 +136,7 @@ def _ewls_ridge(X, Y, hl, a):
 
 
 def _beta_adjusted_target(r):
-    """Partially strips each stock's estimated common-factor (index) beta out of its target return
-    before the ridge fit, so the forecast targets idiosyncratic rather than market-wide moves."""
+    """Identical to SAFE_llboost_v9._beta_adjusted_target."""
     rs = r[1:]
     cf = rs.mean(0)
     m = rs.shape[1]
@@ -186,8 +157,7 @@ def _beta_adjusted_target(r):
 
 
 def _rank_stability_signal(logp):
-    """Cross-sectional short/long return z-score crossover: fades a stock's short-term move only
-    when it disagrees with its own medium-term trend direction."""
+    """Identical to SAFE_llboost_v10/v11/v12/v13/v14._rank_stability_signal."""
     t = logp.shape[1]
     if t < max(RS_SHORT_W, RS_LONG_W) + 5:
         return None
@@ -203,10 +173,9 @@ def _rank_stability_signal(logp):
 
 
 def _rs_raw_hist(logp):
-    """Full-history, vectorized version of _rank_stability_signal: column k equals what
-    _rank_stability_signal(logp[:, :k+1]) would return (NaN where not yet computable). Used to
-    build each stock's own trailing track record of the raw rank-stability signal against its
-    realized return, for the learned per-stock blend weight below."""
+    """Vectorized full-history version of _rank_stability_signal: out[:, k] equals what
+    _rank_stability_signal(logp[:, :k+1]) would return (NaN where not yet computable). Needed to
+    get each name's own trailing causal IC of the raw RS signal against its realized return."""
     nInst, T = logp.shape
     out = np.full((nInst - 1, T), np.nan)
     lo = max(RS_SHORT_W, RS_LONG_W) + 4
@@ -238,9 +207,9 @@ def _roll_std(x, w):
 
 
 def _algo_vol_shares(lpA, cur0, cap_dol):
-    """Adaptive realized-vol leg -> integer share target for ALGO (instrument 0). Causal, and
-    entirely independent of the idio book -- this leg has its own forecast and is never flattened
-    or rotated by anything else in this file."""
+    """Adaptive realized-vol leg -> integer share target for ALGO (instrument 0). Causal.
+    Identical to SAFE_llboost_v9-v14 (unaffected by anything else in this file -- this leg has its
+    own independent forecast and is never flattened/rotated)."""
     global _PREV_ALGO_SHARES, _PREV_T
     T = len(lpA)
     tnow = T - 1
@@ -356,10 +325,10 @@ def _corrmat(X, Y):
 
 
 def _combine_leaders(rs, j, T, cand_weight_pairs):
-    """Combines an arbitrary list of (candidate leader, weight) pairs into stock j's boost: each
-    candidate's convex-scaled recent move is included only if it independently clears its own
-    positive realized-IC validation bar, then averaged weighted by |corr| against j. At a single
-    validated candidate this reduces to a plain single-leader nudge."""
+    """Generalizes the plain single-leader boost's per-follower body (scale/power transform,
+    IC>0 validation gate, apply lead_boost[-1]) to a |corr|-weighted average over an arbitrary
+    list of (candidate, weight) pairs. At a single candidate with weight 1.0 this is bit-identical
+    to the plain single-leader boost's inner loop -- verified in test_v19_twohop.py."""
     contribs, weights = [], []
     for i, w in cand_weight_pairs:
         lead = rs[i]
@@ -380,12 +349,14 @@ def _combine_leaders(rs, j, T, cand_weight_pairs):
 
 
 def _pairwise_boost(rs):
-    """For each stock, finds its most significant (Bonferroni-corrected) direct lead-lag candidate
-    among the most volatile BOOST_N_CANDIDATES peers, using the full return history. If that direct
-    leader itself has its own direct leader that is also significant against the original stock, it
-    is included as a second, independently-validated candidate. All candidates are combined via
-    _combine_leaders, correlation-weighted, each still individually required to have a positive
-    realized IC against the stock being boosted."""
+    """Two-hop transitive boost (ported verbatim from SAFE_llboost_v19.py). Each follower j's
+    direct leader B is selected exactly as in the plain single-leader boost (argmax |corr| among
+    the BOOST_N_CANDIDATES most-volatile candidates, Bonferroni-significant). If B itself has its
+    own direct leader A (A != j, A != B, A in the candidate pool) with a DIRECTLY significant
+    |corr(A, j)|, A is added as a second candidate. The (at most two) candidates are combined via
+    `_combine_leaders`, a |corr|-weighted average, each independently gated on its own realized
+    validation IC > 0. Reduces exactly to the plain single-leader boost whenever no valid two-hop
+    chain exists."""
     n, T = rs.shape
     boost = np.zeros(n)
     if T < BOOST_MIN_DAY:
@@ -432,8 +403,9 @@ def _pairwise_boost(rs):
 
 def _idio_signal(prcSoFar):
     """The champion's FULL, final idio forecast: ridge ensemble + beta-adjusted target, BLEND
-    reversion, two-hop pairwise boost, learned per-stock rank-stability blend, post-jump fixed-size
-    fade (applied last). Returns a 50-vector (idio names only, ALGO excluded)."""
+    reversion, two-hop transitive pairwise boost (v19), learned per-name rank-stability blend
+    weight (v21), post-jump fixed-size fade (v12, applied last). Returns a 50-vector (idio names
+    only, ALGO excluded)."""
     logp = np.log(prcSoFar)
     r = logp[:, 1:] - logp[:, :-1]
 
@@ -460,10 +432,8 @@ def _idio_signal(prcSoFar):
         s_z = (rs_sig - rs_sig.mean()) / (s_std + 1e-12) if s_std > 1e-12 else np.zeros_like(rs_sig)
         day_scale = np.abs(wz).mean() + 1e-12
         T_full = logp.shape[1]
-        min_day_learn = max(BOOST_MIN_DAY, WARMUP + BOOST_IC_L)
-        if T_full >= min_day_learn:
-            # each stock's blend weight is amplified/shrunk from RS_WEIGHT by its own trailing
-            # BOOST_IC_L-day causal IC of the raw rank-stability signal against its realized return
+        min_day_g84 = max(BOOST_MIN_DAY, WARMUP + BOOST_IC_L)
+        if T_full >= min_day_g84:
             idx_today = T_full - 1
             a = idx_today - BOOST_IC_L
             rs_hist = _rs_raw_hist(logp)
@@ -476,7 +446,7 @@ def _idio_signal(prcSoFar):
             ok = finite & (denom > 1e-20)
             ic = np.zeros_like(mx_)
             ic[ok] = cov[ok] / denom[ok]
-            w = RS_WEIGHT * np.clip(1.0 + RS_LEARN_GAIN * ic, 0.0, RS_LEARN_CAP)
+            w = RS_WEIGHT * np.clip(1.0 + G84_GAIN * ic, 0.0, G84_CAP)
         else:
             w = RS_WEIGHT
         wz = (1 - w) * wz + w * s_z * day_scale
@@ -496,10 +466,9 @@ def _idio_signal(prcSoFar):
 
 
 def _fallback_signals(P):
-    """The three regime-insurance fallback signals -- short cross-sectional momentum, Jegadeesh-
-    Titman momentum, and residual (index-neutral) momentum -- each computed from a small trailing
-    tail slice of P (cheap, unlike the champion's full-history pipeline). Returns {name: 50-vec or
-    None}; None means insufficient history, caller substitutes the champion signal."""
+    """Identical to SAFE_llboost_v14.py's Part B: mom/momJT/residMom computed from a small trailing
+    tail slice of P (not the full history _idio_signal needs). Returns {name: 50-vec or None} --
+    None means insufficient history, caller substitutes champ."""
     lookback = max(REV_W, MOMJT_L, RESIDM_L) + 2
     n = P.shape[1]
     Ptail = P[:, max(0, n - lookback):n]
@@ -568,7 +537,7 @@ def _ensure_cache(P):
 
 def _pn1(name, n):
     """Traded-PnL-sign proxy for (signal name, day n): sign(_sig_at(name,n)).realized_return, summed
-    over the 50 idio names. Works for the champion signal or any fallback."""
+    over the 50 idio names. Generalizes SAFE_llboost_v11/v12/v13/v14's champ-only _pn1 to any signal."""
     key = (name, n)
     v = _PN.get(key)
     if v is None:
@@ -582,8 +551,8 @@ def _pn(name, lo, hi):
 
 
 def _xc1(n):
-    """Cross-sectional lag-1 autocorrelation between realized idio returns of day n-1 and day n
-    (memoized) -- the core building block of the momentum-regime detector below."""
+    """Cross-sectional lag-1 autocorr between realized idio returns of day n-1 and day n. Memoized.
+    Identical to algopart2/SAFE_rotate.py's _xc1 -- signal-agnostic, needs only _RET."""
     v = _XC.get(n)
     if v is None:
         a = _RET.get(n - 1); b = _RET.get(n)
@@ -596,15 +565,15 @@ def _xc1(n):
 
 
 def _xsac(a):
-    """Trailing XSAC_W-day mean cross-sectional lag-1 autocorrelation as of day a (positive =
-    momentum regime)."""
+    """Trailing XSAC_W-day mean cross-sectional lag-1 autocorr as of day a (positive = momentum
+    regime). Identical to algopart2/SAFE_rotate.py's _xsac."""
     vals = [_xc1(n) for n in range(a - XSAC_W + 1, a + 1)]
     vals = [v for v in vals if v is not None]
     return float(np.mean(vals)) if len(vals) >= XSAC_W // 2 else None
 
 
 def _xsac_flag(T):
-    """True if the momentum-regime detector has stayed above XSAC_TH for XSAC_P consecutive days."""
+    """Identical to algopart2/SAFE_rotate.py's _xsac_flag: sustained above XSAC_TH for XSAC_P days."""
     for a in range(T - XSAC_P, T):
         v = _xsac(a)
         if v is None or v <= XSAC_TH:
@@ -614,8 +583,8 @@ def _xsac_flag(T):
 
 def _pick_at(a):
     """One day's validator verdict: 'champ' unless the champion is sick (trailing PnL-sum negative
-    OR the momentum-regime detector flags it) AND a fallback is beating it -- and only a fallback
-    that's both profitable and strictly ahead of the champion over the same window qualifies."""
+    OR xsac flags a momentum regime) AND a fallback is beating it. Identical to
+    SAFE_llboost_v14.py's _pick_at."""
     lo = a - ROT_W + 1
     if lo < WARMUP:
         return "champ"
@@ -634,7 +603,7 @@ def _pick_at(a):
 
 def _choose(T):
     """Requires the SAME fallback to win _pick_at on each of the last ROT_P consecutive days before
-    switching away from the champion signal."""
+    switching away from champ. Identical to SAFE_llboost_v14.py's _choose."""
     picks = [_pick_at(a) for a in range(T - ROT_P, T)]
     if picks and picks[0] is not None and picks[0] != "champ" and all(p == picks[0] for p in picks):
         return picks[0]
@@ -643,7 +612,8 @@ def _choose(T):
 
 def _kill(T, chosen):
     """Flatten the idio book if whichever signal is currently chosen has its trailing-ROT_W summed
-    realized PnL-sign proxy below KILL_MARGIN, re-evaluated fresh each day (KILL_P=1)."""
+    realized PnL-sign proxy below KILL_MARGIN, re-evaluated fresh each day (KILL_P=1). Identical to
+    SAFE_llboost_v14.py's _kill."""
     if not KILL_ON:
         return False
     for a in range(T - KILL_P, T):

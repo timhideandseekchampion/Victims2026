@@ -24,7 +24,7 @@ independently-calibrated lead-lag structure, not real market data.
 Run: python3 test_boost_min_day_synthetic.py
 """
 import numpy as np
-import ArbitrageVictims as AV
+import algopart3.ArbitrageVictimsV2 as AV
 from changepoint_synthetic import simulate
 
 commRate = np.full(51, 1e-4); commRate[0] = 2e-5
